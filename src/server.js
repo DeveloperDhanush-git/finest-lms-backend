@@ -13,6 +13,8 @@ const startServer = async () => {
         await connectDB();
         app.listen(PORT, () => {
             console.log(`Server is running on http://localhost:${PORT}`);
+            console.log(`Server is running in http://192.168.1.24:${PORT}`);
+            console.log(`API documentation available at http://localhost:${PORT}/api-docs`);
         });
     } catch (error) {
         console.error('Failed to start server:', error.message);

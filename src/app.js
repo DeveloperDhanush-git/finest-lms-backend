@@ -2,6 +2,9 @@ const express = require('express');
 
 const app = express();
 
+const swaggerDocs = require('./config/swagger');
+swaggerDocs(app);
+
 app.use(express.json());
 
 const PORT = process.env.PORT || 5000;
