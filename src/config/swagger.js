@@ -9,13 +9,16 @@ const options = {
       version: "1.0.0",
       description: "Enterprise Learning Management System API Documentation",
     },
-
     servers: [
-      {
-        url: "http://localhost:5000/api/v1",
-        description: "Development Server",
-      },
-    ],
+  {
+    url: "http://localhost:5000/api",
+    description: "Local Development",
+  },
+  {
+    url: "http://192.168.1.24:5000/api",
+    description: "Production Server",
+  },
+],
 
     components: {
       securitySchemes: {
