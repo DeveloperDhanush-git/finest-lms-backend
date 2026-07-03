@@ -103,7 +103,11 @@
  * /sections/course/{courseId}:
  *   post:
  *     summary: Create a new section in a course
- *     description: Creates a new section within a specific course. Only the course owner (instructor) can create sections. Prevents duplicate order values.
+ *     description: |
+ *             Creates a new section inside a course.
+ *             This endpoint exists so instructors can organize lessons into sections.
+ *             Frontend usage:
+ *               - Add section form in course builder
  *     tags: [Sections]
  *     security:
  *       - bearerAuth: []
@@ -201,7 +205,11 @@
  * /sections/{id}:
  *   patch:
  *     summary: Update a section
- *     description: Updates a section. Only the course owner (instructor) can update sections. Validates against duplicate order values.
+ *     description: |
+ *             Updates an existing course section.
+ *             This endpoint exists to edit section titles, descriptions, and order.
+ *             Frontend usage:
+ *               - Section edit form in course editor
  *     tags: [Sections]
  *     security:
  *       - bearerAuth: []
@@ -259,7 +267,11 @@
  *
  *   delete:
  *     summary: Delete a section
- *     description: Soft deletes a section and all its lectures. Only the course owner can delete sections. Updates course and section lecture counts.
+ *     description: |
+ *             Deletes a course section and its lectures.
+ *             This endpoint exists to remove obsolete sections from a course.
+ *             Frontend usage:
+ *               - Delete section option in course manager
  *     tags: [Sections]
  *     security:
  *       - bearerAuth: []

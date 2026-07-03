@@ -29,12 +29,12 @@ const authMiddleware = async (
       verifyAccessToken(token);
 
     const user =
-  await User.findOne({
-    _id: decoded.id,
-    accountStatus: "active",
-  }).select(
-    "_id firstName lastName email role avatar phone countryCode accountStatus"
-  );
+      await User.findOne({
+        _id: decoded.id,
+        accountStatus: "active",
+      }).select(
+        "_id firstName lastName email role avatar phone countryCode accountStatus"
+      );
 
     if (!user) {
       return res.status(401).json({

@@ -37,11 +37,12 @@ const login = async (req, res) => {
 const refreshToken = async (req, res) => {
     try {
         const { refreshToken } = req.body;
-        const { accessToken } = await authService.refreshUserToken(refreshToken);
+        const { accessToken, refreshToken: newRefreshToken } = await authService.refreshUserToken(refreshToken);
 
         res.status(200).json({
             message: 'Token refreshed successfully',
             accessToken,
+            refreshToken: newRefreshToken,
         });
     } catch (error) {
         res.status(401).json({ error: error.message });
@@ -59,44 +60,44 @@ const logout = async (req, res) => {
     }
 };
 
-const forgotPassword =async (req,res,next) => {
+const forgotPassword = async (req, res, next) => {
     try {
-      await authService.forgotPassword(
-        req.body.email
-      );
-      return res.status(200).json({
-        success: true,
-        message:
-          "If the email exists, a password reset link has been sent.",
-      });
+        await authService.forgotPassword(
+            req.body.email
+        );
+        return res.status(200).json({
+            success: true,
+            message:
+                "If the email exists, a password reset link has been sent.",
+        });
     } catch (error) {
-      next(error);
+        next(error);
     }
 };
 
-const resetPassword =async (req, res, next) => {
+const resetPassword = async (req, res, next) => {
     try {
-      await authService.resetPassword(
-        req.params.token,
-        req.body.password
-      );
+        await authService.resetPassword(
+            req.params.token,
+            req.body.password
+        );
 
-      return res.status(200).json({
-        success: true,
-        message:
-          "Password reset successful",
-      });
+        return res.status(200).json({
+            success: true,
+            message:
+                "Password reset successful",
+        });
 
     } catch (error) {
-      next(error);
+        next(error);
     }
 };
 
-const getCurrentUser = async (req,res) => {
+const getCurrentUser = async (req, res) => {
 
     res.status(200).json({
-      success: true,
-      user: req.user,
+        success: true,
+        user: req.user,
     });
 };
 

@@ -77,9 +77,12 @@
  *             schema:
  *               type: object
  *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
  *                 message:
  *                   type: string
- *                   example: Category created
+ *                   example: Category created successfully
  *                 data:
  *                   $ref: '#/components/schemas/Category'
  *       400:
@@ -131,7 +134,13 @@
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Category'
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   $ref: '#/components/schemas/Category'
  *       404:
  *         description: Category not found
  *         content:
@@ -167,6 +176,9 @@
  *                 success:
  *                   type: boolean
  *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Category updated successfully
  *                 data:
  *                   $ref: '#/components/schemas/Category'
  *       400:

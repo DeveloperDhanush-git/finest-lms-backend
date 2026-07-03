@@ -14,6 +14,8 @@ const createLectureSchema =
     videoUrl:
       z.string().optional(),
 
+    videoPublicId: z.string().optional(),
+
     duration:
       z.number().min(0),
 

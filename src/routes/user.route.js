@@ -1,11 +1,18 @@
-const { getUserProfile, updateUserProfile, deleteUserProfile } = require('../controllers/user.controller');
+const { getUserProfile, updateUserProfile, deleteUserProfile, uploadAvatar, removeAvatar, changePassword } = require('../controllers/user.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
-const { updateProfileSchema } = require('../validation/user.validation')
+const {
+  uploadImage
+} = require("../middlewares/upload.middleware");
+
+const { updateProfileSchema, changePasswordSchema } = require('../validation/user.validation')
 const router = require('express').Router();
 const validateMiddleware = require('../middlewares/validate.middleware');
 
 router.get("/profile", authMiddleware, getUserProfile)
-router.patch("/profile",authMiddleware,validateMiddleware(updateProfileSchema), updateUserProfile)
-router.delete("/profile",authMiddleware, deleteUserProfile)
+router.patch("/profile", authMiddleware, validateMiddleware(updateProfileSchema), updateUserProfile)
+router.delete("/profile", authMiddleware, deleteUserProfile)
+router.post("/avatar", authMiddleware, uploadImage.single('avatar'), uploadAvatar);
+router.delete("/avatar", authMiddleware, removeAvatar);
+router.patch("/change-password", authMiddleware, validateMiddleware(changePasswordSchema), changePassword);
 
 module.exports = router;

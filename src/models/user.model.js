@@ -25,7 +25,7 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
       match: [
-        /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
         "Please enter a valid email",
       ],
     },
@@ -41,11 +41,15 @@ const userSchema = new mongoose.Schema(
       enum: ["student", "instructor", "admin"],
       default: "student",
     },
-
     avatar: {
-      type: String,
-      default: null,
-    },
+  type: String,
+  default: null,
+},
+
+avatarKey: {
+  type: String,
+  default: null,
+},
 
     phone: {
       type: String,
@@ -163,7 +167,7 @@ userSchema.methods.toJSON = function () {
   delete obj.lockUntil;
 
   delete obj.resetPasswordToken;
-  
+
   delete obj.resetPasswordExpires;
 
   return obj;

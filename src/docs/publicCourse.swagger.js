@@ -42,7 +42,11 @@
  * /public/courses:
  *   get:
  *     summary: List public courses
- *     description: Retrieves published courses available to all users. Supports search, category filter, pagination, and sorting.
+ *     description: |
+ *             Returns publicly available courses for browsing.
+ *             This endpoint exists to populate the public catalog and search pages.
+ *             Frontend usage:
+ *               - Public course listing and search pages
  *     tags: [Public Courses]
  *     parameters:
  *       - in: query
@@ -87,7 +91,11 @@
  * /public/courses/{id}:
  *   get:
  *     summary: Get public course details
- *     description: Retrieves a published course by its ID.
+ *     description: |
+ *             Retrieves public course details by ID.
+ *             This endpoint exists to show the course landing page to visitors and prospective students.
+ *             Frontend usage:
+ *               - Public course detail page
  *     tags: [Public Courses]
  *     parameters:
  *       - in: path

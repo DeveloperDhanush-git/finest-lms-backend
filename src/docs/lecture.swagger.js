@@ -28,10 +28,66 @@
  *           type: string
  *           nullable: true
  *           example: Learn how to declare and use variables in JavaScript
- *         videoUrl:
- *           type: string
- *           nullable: true
- *           example: https://cdn.example.com/videos/lecture-1-intro-variables.mp4
+ *         video:
+ *           type: object
+ *           properties:
+ *             original:
+ *               type: string
+ *               nullable: true
+ *               example: uploads/video.mp4
+ *             masterPlaylist:
+ *               type: string
+ *               nullable: true
+ *               example: https://cdn.example.com/videos/lecture-1/master.m3u8
+ *             s3Prefix:
+ *               type: string
+ *               nullable: true
+ *               example: lectures/videos/lecture-1
+ *             thumbnail:
+ *               type: string
+ *               nullable: true
+ *               example: https://cdn.example.com/videos/lecture-1/thumbnail.jpg
+ *             processingStatus:
+ *               type: string
+ *               enum: [pending, processing, completed, failed]
+ *               example: completed
+ *             processingError:
+ *               type: string
+ *               nullable: true
+ *               example: null
+ *             resolutions:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   quality:
+ *                     type: string
+ *                     example: 720p
+ *                   playlist:
+ *                     type: string
+ *                     example: https://cdn.example.com/videos/lecture-1/720p.m3u8
+ *             metadata:
+ *               type: object
+ *               nullable: true
+ *               properties:
+ *                 width:
+ *                   type: number
+ *                   example: 1280
+ *                 height:
+ *                   type: number
+ *                   example: 720
+ *                 duration:
+ *                   type: number
+ *                   example: 12
+ *                 bitrate:
+ *                   type: number
+ *                   example: 2800000
+ *                 codec:
+ *                   type: string
+ *                   example: h264
+ *                 fps:
+ *                   type: number
+ *                   example: 30
  *         duration:
  *           type: number
  *           description: Duration in minutes
@@ -91,6 +147,9 @@
  *           type: string
  *           format: uri
  *           example: https://cdn.example.com/videos/lecture-3-closures.mp4
+ *         videoPublicId:
+ *           type: string
+ *           example: temp/abcd
  *         duration:
  *           type: number
  *           minimum: 0
@@ -126,6 +185,9 @@
  *           type: string
  *           format: uri
  *           example: https://cdn.example.com/videos/lecture-3-closures-updated.mp4
+ *         videoPublicId:
+ *           type: string
+ *           example: temp/abcd
  *         duration:
  *           type: number
  *           minimum: 0
@@ -162,7 +224,11 @@
  * /lectures:
  *   post:
  *     summary: Create a new lecture
- *     description: Creates a new lecture within a section. Only the course owner (instructor) can create lectures. Updates course and section lecture counts and duration.
+ *     description: |
+ *             Creates a new lecture within a course section.
+ *             This endpoint exists so instructors can add lesson content to their course.
+ *             Frontend usage:
+ *               - Add lecture form in course editor
  *     tags: [Lectures]
  *     security:
  *       - bearerAuth: []
@@ -216,7 +282,11 @@
  * /lectures/section/{sectionId}:
  *   get:
  *     summary: Get all lectures in a section
- *     description: Retrieves all non-deleted lectures in a section, sorted by order
+ *     description: |
+ *             Lists all lectures in a section.
+ *             This endpoint exists to retrieve the course structure for an instructor or student.
+ *             Frontend usage:
+ *               - Section detail page showing lectures
  *     tags: [Lectures]
  *     security:
  *       - bearerAuth: []
@@ -256,7 +326,11 @@
  * /lectures/{id}:
  *   patch:
  *     summary: Update a lecture
- *     description: Updates a lecture. Only the course owner (instructor) can update lectures. Automatically recalculates course and section duration if lecture duration changes.
+ *     description: |
+ *             Updates lecture metadata such as title or description.
+ *             This endpoint exists to allow editing lecture content details.
+ *             Frontend usage:
+ *               - Lecture edit screen
  *     tags: [Lectures]
  *     security:
  *       - bearerAuth: []
@@ -358,4 +432,209 @@
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
+ */
+
+/**
+ * @swagger
+ * /lectures/{id}/video:
+ *   post:
+ *     summary: Upload lecture video
+ *     description: |
+ *             Uploads or replaces a lecture's video file.
+ *             This endpoint exists to attach the actual lesson media to a lecture.
+ *             Frontend usage:
+ *               - Lecture video upload in course builder
+ *     tags: [Lectures]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Lecture ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               video:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       202:
+ *         description: Video uploaded successfully. Processing started.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Video uploaded successfully. Processing started.
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     lectureId:
+ *                       type: string
+ *                       example: 64d4e5f6a7b8c9d0e1f2a3b4
+ *                     processingStatus:
+ *                       type: string
+ *                       example: processing
+ *
+ * /lectures/{id}/resource:
+ *   post:
+ *     summary: Upload lecture resource
+ *     description: |
+ *             Uploads a lecture resource file.
+ *             This endpoint exists to attach documents or supplements to a lecture.
+ *             Frontend usage:
+ *               - Add resource action in lecture editor
+ *     tags: [Lectures]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Lecture ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Resource uploaded successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Resource uploaded successfully
+ *                 data:
+ *                   $ref: '#/components/schemas/Lecture'
+ */
+
+/**
+ * @swagger
+ * /lectures/{id}/video:
+ *   delete:
+ *     summary: Remove lecture video
+ *     description: |
+ *             Deletes a lecture video.
+ *             This endpoint exists to remove or replace a bad video upload.
+ *             Frontend usage:
+ *               - Remove video action in lecture management
+ *     tags: [Lectures]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Lecture ID
+ *     responses:
+ *       200:
+ *         description: Video removed successfully
+ *
+ * /lectures/{id}/resource/{resourceId}:
+ *   delete:
+ *     summary: Remove a lecture resource
+ *     description: |
+ *             Deletes a resource attached to a lecture.
+ *             This endpoint exists to keep lecture materials up to date and remove unwanted files.
+ *             Frontend usage:
+ *               - Delete lecture resource action
+ *     tags: [Lectures]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Lecture ID
+ *       - in: path
+ *         name: resourceId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Resource ID (from the resources array)
+ *     responses:
+ *       200:
+ *         description: Resource removed successfully
+ * 
+ * /lectures/{id}/video/status:
+ *   get:
+ *     summary: Get video transcoding status for a lecture
+ *     description: |
+ *             Checks the status of a lecture video upload or processing.
+ *             This endpoint exists to let the frontend poll for readiness of video assets.
+ *             Frontend usage:
+ *               - Upload progress/status indicator for lecture videos
+ *     tags: [Lectures]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Lecture ID
+ *     responses:
+ *       200:
+ *         description: Video status retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     lectureId:
+ *                       type: string
+ *                       example: 64d4e5f6a7b8c9d0e1f2a3b4
+ *                     status:
+ *                       type: string
+ *                       enum: [pending, processing, completed, failed]
+ *                       example: completed
+ *                     error:
+ *                       type: string
+ *                       nullable: true
+ *                       example: null
+ *                     streamUrl:
+ *                       type: string
+ *                       nullable: true
+ *                       example: https://cdn.example.com/videos/lecture-1/master.m3u8
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Lecture not found
  */

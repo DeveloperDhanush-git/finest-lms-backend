@@ -18,9 +18,19 @@ const {
   deleteCourse,
   publishCourse,
   unpublishCourse,
+  uploadThumbnail,
+  removeThumbnail,
+  uploadPreviewVideo,
+  removePreviewVideo,
+  getSearchSuggestions,
 } = require(
   "../controllers/course.controller"
 );
+
+const {
+  uploadImage,
+  uploadVideo,
+} = require("../middlewares/upload.middleware");
 
 const {
   createCourseSchema,
@@ -50,6 +60,11 @@ router.get(
     "admin"
   ),
   getMyCourses
+);
+
+router.get(
+  "/search/suggestions",
+  getSearchSuggestions
 );
 
 router.get(
@@ -99,6 +114,36 @@ router.post(
     "admin"
   ),
   unpublishCourse
+);
+
+router.post(
+  "/:id/thumbnail",
+  authMiddleware,
+  roleMiddleware("instructor", "admin"),
+  uploadImage.single("thumbnail"),
+  uploadThumbnail
+);
+
+router.delete(
+  "/:id/thumbnail",
+  authMiddleware,
+  roleMiddleware("instructor", "admin"),
+  removeThumbnail
+);
+
+router.post(
+  "/:id/preview-video",
+  authMiddleware,
+  roleMiddleware("instructor", "admin"),
+  uploadVideo.single("previewVideo"),
+  uploadPreviewVideo
+);
+
+router.delete(
+  "/:id/preview-video",
+  authMiddleware,
+  roleMiddleware("instructor", "admin"),
+  removePreviewVideo
 );
 
 module.exports = router;

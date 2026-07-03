@@ -34,10 +34,29 @@
  *           type: string
  *           nullable: true
  *           example: https://cdn.example.com/course-thumbnails/js-bootcamp.jpg
- *         previewVideo:
+ *         thumbnailKey:
  *           type: string
  *           nullable: true
- *           example: https://cdn.example.com/previews/js-bootcamp-preview.mp4
+ *           example: courses/thumbnails/64b2c3d4e5f6a7b8c9d0e1f2.jpg
+ *         previewVideo:
+ *           type: object
+ *           nullable: true
+ *           properties:
+ *             url:
+ *               type: string
+ *               example: https://cdn.example.com/previews/js-bootcamp-preview.mp4
+ *             key:
+ *               type: string
+ *               example: courses/previews/64b2c3d4e5f6a7b8c9d0e1f2.mp4
+ *             duration:
+ *               type: number
+ *               example: 0
+ *             size:
+ *               type: number
+ *               example: 10485760
+ *             mimeType:
+ *               type: string
+ *               example: video/mp4
  *         language:
  *           type: string
  *           example: English
@@ -226,7 +245,11 @@
  * /courses:
  *   post:
  *     summary: Create a new course
- *     description: Creates a new course. Only instructors can create courses. The course is created in draft status.
+ *     description: |
+ *             Creates a new course draft for an instructor.
+ *             This endpoint exists so instructors can create and save course content.
+ *             Frontend usage:
+ *               - Course creation page in the instructor panel
  *     tags: [Courses]
  *     security:
  *       - bearerAuth: []
@@ -274,7 +297,11 @@
  * /courses/my-courses:
  *   get:
  *     summary: Get all courses created by the authenticated instructor
- *     description: Returns all courses owned by the current instructor, including draft and published courses
+ *     description: |
+ *             Lists courses created by the authenticated instructor.
+ *             This endpoint exists so instructors can manage their own course catalog.
+ *             Frontend usage:
+ *               - Instructor dashboard course list
  *     tags: [Courses]
  *     security:
  *       - bearerAuth: []
@@ -312,7 +339,12 @@
  * /courses/{id}:
  *   get:
  *     summary: Get course details by ID
- *     description: Retrieves detailed information about a specific course
+ *     description: |
+ *             Retrieves a single course by ID for the instructor or public viewer.
+ *             This endpoint exists to load course details for editing or display.
+ *             Frontend usage:
+ *               - Course edit page
+ *               - Course preview page
  *     tags: [Courses]
  *     security:
  *       - bearerAuth: []
@@ -458,7 +490,11 @@
  * /courses/{id}/publish:
  *   post:
  *     summary: Publish a course
- *     description: Publishes a course and sets its published date. Only the course owner can publish their course.
+ *     description: |
+ *             Publishes a course to make it visible to students.
+ *             This endpoint exists to change a course from draft to live status.
+ *             Frontend usage:
+ *               - Publish button in the course editor
  *     tags: [Courses]
  *     security:
  *       - bearerAuth: []
@@ -508,7 +544,11 @@
  * /courses/{id}/unpublish:
  *   post:
  *     summary: Unpublish a course
- *     description: Unpublishes a published course without deleting it. Only the course owner can unpublish their course.
+ *     description: |
+ *             Unpublishes a live course, hiding it from new students.
+ *             This endpoint exists to temporarily disable course enrollment.
+ *             Frontend usage:
+ *               - Unpublish action in the course management console
  *     tags: [Courses]
  *     security:
  *       - bearerAuth: []
@@ -554,4 +594,170 @@
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
+ */
+
+/**
+ * @swagger
+ * /courses/{id}/thumbnail:
+ *   post:
+ *     summary: Upload course thumbnail
+ *     description: |
+ *             Uploads or updates the course thumbnail image.
+ *             This endpoint exists to attach visual branding to a course listing.
+ *             Frontend usage:
+ *               - Course thumbnail upload in the course builder
+ *     tags: [Courses]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Course ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               thumbnail:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Thumbnail updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Thumbnail updated successfully
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     thumbnail:
+ *                       type: string
+ *                       example: https://res.cloudinary.com/demo/image/upload/v1631234567/courses/thumbnails/abc.jpg
+ *                     thumbnailKey:
+ *                       type: string
+ *                       example: courses/thumbnails/abc
+ *
+ * /courses/{id}/preview-video:
+ *   post:
+ *     summary: Upload course preview video
+ *     description: |
+ *             Uploads a course preview video.
+ *             This endpoint exists to allow prospective students to preview the course content.
+ *             Frontend usage:
+ *               - Preview video upload section in the course manager
+ *     tags: [Courses]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Course ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               previewVideo:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Preview video updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Preview video updated successfully
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     previewVideo:
+ *                       type: object
+ *                       properties:
+ *                         url:
+ *                           type: string
+ *                           example: https://res.cloudinary.com/demo/video/upload/v1631234567/courses/previews/xyz.mp4
+ *                         key:
+ *                           type: string
+ *                           example: courses/previews/xyz.mp4
+ *                         duration:
+ *                           type: number
+ *                           example: 0
+ *                         size:
+ *                           type: number
+ *                           example: 1048576
+ *                         mimeType:
+ *                           type: string
+ *                           example: video/mp4
+ */
+
+/**
+ * @swagger
+ * /courses/{id}/thumbnail:
+ *   delete:
+ *     summary: Remove course thumbnail
+ *     description: |
+ *             Removes the course thumbnail image.
+ *             This endpoint exists so instructors can replace or remove outdated thumbnails.
+ *             Frontend usage:
+ *               - Delete thumbnail action in editor
+ *     tags: [Courses]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Course ID
+ *     responses:
+ *       200:
+ *         description: Thumbnail removed successfully
+ *
+ * /courses/{id}/preview-video:
+ *   delete:
+ *     summary: Remove course preview video
+ *     description: |
+ *             Deletes the course preview video.
+ *             This endpoint exists so instructors can manage preview media for the course.
+ *             Frontend usage:
+ *               - Remove preview video action in course builder
+ *     tags: [Courses]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Course ID
+ *     responses:
+ *       200:
+ *         description: Preview video removed successfully
  */

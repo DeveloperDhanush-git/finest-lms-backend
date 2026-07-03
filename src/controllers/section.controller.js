@@ -36,7 +36,8 @@ const getSections =
 
       const sections =
         await sectionService.getSections(
-          req.params.courseId
+          req.params.courseId,
+          req.user._id
         );
 
       res.status(200).json({

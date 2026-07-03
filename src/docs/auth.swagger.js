@@ -10,10 +10,13 @@
  * components:
  *   schemas:
  *
- *     UserResponse:
+ *     User:
  *       type: object
  *       properties:
  *         _id:
+ *           type: string
+ *           example: 664f1a2b3c4d5e6f7a8b9c0d
+ *         id:
  *           type: string
  *           example: 664f1a2b3c4d5e6f7a8b9c0d
  *         firstName:
@@ -81,7 +84,12 @@
  * /auth/register:
  *   post:
  *     summary: Register a new user
- *     description: Creates a new user account with the student role. Returns the created user object (without the password hash).
+ *     description: |
+ *             Creates a new user account as a student. This endpoint exists to register new users,
+ *             store their account details, and enable them to log in later.
+ *             Frontend usage:
+ *               - Sign-up / registration page
+ *               - Onboarding process for new learners
  *     tags: [Authentication]
  *     security: []
  *
@@ -130,7 +138,7 @@
  *                   type: string
  *                   example: User registered successfully
  *                 user:
- *                   $ref: '#/components/schemas/UserResponse'
+ *                   $ref: '#/components/schemas/User'
  *       400:
  *         description: Validation error or user already exists
  *         content:
@@ -163,7 +171,12 @@
  * /auth/login:
  *   post:
  *     summary: Login a user
- *     description: Authenticates a user with email and password. Returns a short-lived JWT access token and a 7-day refresh token along with the user profile.
+ *     description: |
+ *             Authenticates a user with email and password and returns access/refresh tokens.
+ *             This endpoint exists to log users into the application securely.
+ *             Frontend usage:
+ *               - Login form submission
+ *               - Storing tokens for protected API calls
  *     tags: [Authentication]
  *     security: []
  *
@@ -256,7 +269,12 @@
  * /auth/refresh:
  *   post:
  *     summary: Refresh access token
- *     description: Issues a new JWT access token using a valid, non-revoked refresh token stored in the database.
+ *     description: |
+ *             Exchanges a valid refresh token for a new access token when the current token expires.
+ *             This endpoint exists to keep the session active without asking the user to log in again.
+ *             Frontend usage:
+ *               - Silent token refresh in the background
+ *               - Refreshing authentication state before protected requests
  *     tags: [Authentication]
  *     security: []
  *
@@ -322,7 +340,12 @@
  * /auth/logout:
  *   post:
  *     summary: Logout a user
- *     description: Revokes the provided refresh token in the database, preventing it from being used to generate new access tokens.
+ *     description: |
+ *             Revokes a refresh token so it can no longer be used to issue new access tokens.
+ *             This endpoint exists to securely log the user out of the application.
+ *             Frontend usage:
+ *               - Logout button on account menu
+ *               - Clearing stored credentials on the client
  *     tags: [Authentication]
  *     security: []
  *
@@ -385,10 +408,11 @@
  *   post:
  *     summary: Request a password reset token
  *     description: |
- *       Generates a secure password-reset token (valid for 1 hour) and associates it with the
- *       user account. Always responds with a generic success message to prevent user enumeration.
- *       In production the token is delivered via email; during development it is returned directly
- *       in the response body.
+ *             Starts password recovery by generating a reset token for the user.
+ *             This endpoint exists to allow users to regain account access if they forget their password.
+ *             Frontend usage:
+ *               - Forgot password page
+ *               - Sending the user an email reset request
  *     tags: [Authentication]
  *     security: []
  *
@@ -414,14 +438,12 @@
  *             schema:
  *               type: object
  *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
  *                 message:
  *                   type: string
- *                   example: If that email exists, a reset link has been sent.
- *                 resetToken:
- *                   type: string
- *                   nullable: true
- *                   description: "⚠️ Dev-only: will be removed once email service is integrated"
- *                   example: a3f5c8d2e1b74906a1234567890abcdef1234567890abcdef1234567890abcd
+ *                   example: If the email exists, a password reset link has been sent.
  *       400:
  *         description: Validation error (invalid email format)
  *         content:
@@ -447,7 +469,11 @@
  * /auth/reset-password/{token}:
  *   post:
  *     summary: Reset the user's password
- *     description: Validates the password-reset token (must not be expired), hashes the new password, updates the user record, and clears the reset token fields.
+ *     description: |
+ *             Resets the user's password using a valid reset token.
+ *             This endpoint exists to securely update the password after the user verifies identity via email.
+ *             Frontend usage:
+ *               - Password reset page opened from a reset email link
  *     tags: [Authentication]
  *     security: []
  *
@@ -485,6 +511,9 @@
  *             schema:
  *               type: object
  *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
  *                 message:
  *                   type: string
  *                   example: Password reset successful
@@ -516,7 +545,12 @@
  * /auth/me:
  *   get:
  *     summary: Get current authenticated user
- *     description: Returns the authenticated user's profile using the JWT access token.
+ *     description: |
+ *             Returns the current authenticated user's profile data from the access token.
+ *             This endpoint exists so the frontend can verify the current login session and show user info.
+ *             Frontend usage:
+ *               - App initialization to restore logged-in state
+ *               - Protected dashboard and profile display
  *     tags: [Authentication]
  *     security:
  *       - bearerAuth: []
@@ -542,7 +576,7 @@
  *                   type: boolean
  *                   example: true
  *                 user:
- *                   $ref: '#/components/schemas/UserResponse'
+ *                   $ref: '#/components/schemas/User'
  *       401:
  *         description: Authentication required or invalid token
  *         content:

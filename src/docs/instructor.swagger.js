@@ -155,7 +155,13 @@
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/InstructorProfile'
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   $ref: '#/components/schemas/InstructorProfile'
  *       404:
  *         description: Profile not found
  *
@@ -176,8 +182,16 @@
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/InstructorProfile'
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Instructor profile updated successfully
+ *                 data:
+ *                   $ref: '#/components/schemas/InstructorProfile'
  *       400:
  *         description: Validation error
-
  */

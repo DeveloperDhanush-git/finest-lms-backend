@@ -31,8 +31,12 @@ const createCourseSchema = z.object({
   tags: z.array(z.string()).optional(),
 
   thumbnail: z.string().optional(),
-  
+
+  thumbnailPublicId: z.string().optional(),
+
   previewVideo: z.string().optional(),
+
+  previewVideoPublicId: z.string().optional(),
 
 });
 

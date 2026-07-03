@@ -25,7 +25,6 @@ router.post(
 
 router.get(
   "/profile",
-
   authMiddleware,
   roleMiddleware("instructor", "admin"),
   getInstructorProfile

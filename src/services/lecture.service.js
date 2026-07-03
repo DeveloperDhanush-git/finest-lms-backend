@@ -12,47 +12,54 @@ const CourseSection = require(
 
 const InstructorProfile = require("../models/instructor.model")
 
+const {
+  deleteFileFromS3,
+  deleteDirectoryFromS3,
+} = require("./s3.service");
+
+const fs = require("fs-extra");
+
 const createLecture = async (
   userId, data
 ) => {
 
   const instructor =
-  await InstructorProfile.findOne({
-    userId,
-  });
+    await InstructorProfile.findOne({
+      userId,
+    });
 
-if (!instructor) {
-  throw new Error(
-    "Instructor profile not found"
-  );
-}
+  if (!instructor) {
+    throw new Error(
+      "Instructor profile not found"
+    );
+  }
 
-const course =
-  await Course.findOne({
-    _id: data.courseId,
-    instructorId:
-      instructor._id,
-    isDeleted: false,
-  });
+  const course =
+    await Course.findOne({
+      _id: data.courseId,
+      instructorId:
+        instructor._id,
+      isDeleted: false,
+    });
 
-if (!course) {
-  throw new Error(
-    "Course not found or access denied"
-  );
-}
+  if (!course) {
+    throw new Error(
+      "Course not found or access denied"
+    );
+  }
 
   const section =
-  await CourseSection.findOne({
-    _id: data.sectionId,
-    courseId:
-      data.courseId,
-  });
+    await CourseSection.findOne({
+      _id: data.sectionId,
+      courseId:
+        data.courseId,
+    });
 
-if (!section) {
-  throw new Error(
-    "Section not found in course"
-  );
-}
+  if (!section) {
+    throw new Error(
+      "Section not found in course"
+    );
+  }
 
   const lecture =
     await CourseLecture.create(
@@ -85,7 +92,27 @@ if (!section) {
 };
 
 const getLecturesBySection =
-  async (sectionId) => {
+  async (sectionId, userId) => {
+
+    const instructor =
+      await InstructorProfile.findOne({
+        userId,
+      });
+
+    const section = await CourseSection.findById(sectionId);
+    if (!section) {
+      throw new Error("Section not found");
+    }
+
+    const course = await Course.findOne({
+      _id: section.courseId,
+      instructorId: instructor?._id,
+      isDeleted: false,
+    });
+
+    if (!course) {
+      throw new Error("Course not found or access denied");
+    }
 
     return await CourseLecture.find({
       sectionId,
@@ -219,6 +246,14 @@ const deleteLecture =
       );
     }
 
+    if (lecture.video?.s3Prefix) {
+
+      await deleteDirectoryFromS3(
+        lecture.video.s3Prefix
+      );
+
+    }
+
     const deletedLecture =
       await CourseLecture.findOneAndUpdate(
         {
@@ -264,9 +299,400 @@ const deleteLecture =
     return deletedLecture;
   };
 
+
+const updateLectureResource = async (
+  lectureId,
+  userId,
+  resource
+) => {
+
+  const instructor =
+    await InstructorProfile.findOne({
+      userId,
+    });
+
+  if (!instructor) {
+    throw new Error(
+      "Instructor profile not found"
+    );
+  }
+
+  const lecture =
+    await CourseLecture.findById(
+      lectureId
+    );
+
+  if (!lecture) {
+    throw new Error(
+      "Lecture not found"
+    );
+  }
+
+  const course =
+    await Course.findOne({
+      _id: lecture.courseId,
+      instructorId: instructor._id,
+      isDeleted: false,
+    });
+
+  if (!course) {
+    throw new Error(
+      "Unauthorized"
+    );
+  }
+
+  lecture.resources.push(resource);
+
+  await lecture.save();
+
+  return lecture;
+
+};
+
+const deleteLectureResource = async (
+  lectureId,
+  userId,
+  resourceId
+) => {
+
+  const instructor =
+    await InstructorProfile.findOne({
+      userId,
+    });
+
+  if (!instructor) {
+    throw new Error(
+      "Instructor profile not found"
+    );
+  }
+
+  const lecture =
+    await CourseLecture.findById(
+      lectureId
+    );
+
+  if (!lecture) {
+    throw new Error(
+      "Lecture not found"
+    );
+  }
+
+  const course =
+    await Course.findOne({
+      _id: lecture.courseId,
+      instructorId: instructor._id,
+      isDeleted: false,
+    });
+
+  if (!course) {
+    throw new Error(
+      "Unauthorized"
+    );
+  }
+
+  const resource =
+    lecture.resources.id(
+      resourceId
+    );
+
+  if (!resource) {
+    throw new Error(
+      "Resource not found"
+    );
+  }
+
+  await deleteFileFromS3(
+    resource.key
+  );
+
+  resource.deleteOne();
+
+  await lecture.save();
+
+  return lecture;
+
+};
+
+const markLectureProcessing = async (
+  lectureId,
+  userId,
+  videoPath
+) => {
+
+  const instructor =
+    await InstructorProfile.findOne({
+      userId,
+    });
+
+  if (!instructor) {
+    throw new Error(
+      "Instructor profile not found"
+    );
+  }
+
+  const lecture =
+    await CourseLecture.findById(
+      lectureId
+    );
+
+  if (!lecture) {
+    throw new Error(
+      "Lecture not found"
+    );
+  }
+
+  const course =
+    await Course.findOne({
+
+      _id: lecture.courseId,
+
+      instructorId: instructor._id,
+
+      isDeleted: false,
+
+    });
+
+  if (!course) {
+    throw new Error(
+      "Unauthorized"
+    );
+  }
+
+  /*
+  ----------------------------
+  Prevent duplicate processing
+  ----------------------------
+  */
+
+  if (
+    lecture.video.processingStatus ===
+    "processing"
+  ) {
+
+    throw new Error(
+      "Video is already processing."
+    );
+
+  }
+
+  /*
+  ----------------------------
+  Replace existing video
+  ----------------------------
+  */
+
+  if (
+    lecture.video.s3Prefix
+  ) {
+
+    await deleteDirectoryFromS3(
+      lecture.video.s3Prefix
+    );
+
+  }
+
+  if (
+    lecture.video.original
+  ) {
+
+    await fs.remove(
+      lecture.video.original
+    ).catch(() => { });
+
+  }
+
+  /*
+  ----------------------------
+  Reset Video
+  ----------------------------
+  */
+
+  lecture.video = {
+
+    original:
+      videoPath,
+
+    masterPlaylist:
+      null,
+
+    s3Prefix:
+      null,
+
+    thumbnail:
+      null,
+
+    processingStatus:
+      "processing",
+
+    processingError:
+      null,
+
+    resolutions: [],
+
+    metadata:
+      null,
+
+  };
+
+  await lecture.save();
+
+  return lecture;
+
+};
+
+const removeLectureVideo = async (
+  lectureId,
+  userId
+) => {
+
+  const instructor =
+    await InstructorProfile.findOne({
+      userId,
+    });
+
+  if (!instructor) {
+    throw new Error(
+      "Instructor profile not found"
+    );
+  }
+
+  const lecture =
+    await CourseLecture.findById(
+      lectureId
+    );
+
+  if (!lecture) {
+    throw new Error(
+      "Lecture not found"
+    );
+  }
+
+  const course =
+    await Course.findOne({
+      _id: lecture.courseId,
+      instructorId: instructor._id,
+      isDeleted: false,
+    });
+
+  if (!course) {
+    throw new Error(
+      "Unauthorized"
+    );
+  }
+
+  if (lecture.video?.s3Prefix) {
+
+    await deleteDirectoryFromS3(
+      lecture.video.s3Prefix
+    );
+
+  }
+
+  if (lecture.video.original) {
+
+    await fs.remove(
+      lecture.video.original
+    ).catch(() => { });
+
+  }
+
+  lecture.video = {
+
+    original: null,
+
+    masterPlaylist: null,
+
+    s3Prefix: null,
+
+    thumbnail: null,
+
+    processingStatus: "pending",
+
+    processingError: null,
+
+    resolutions: [],
+
+    metadata: null,
+
+  };
+
+  await lecture.save();
+
+  return lecture;
+
+};
+const getLectureVideoStatus = async (
+  lectureId,
+  userId
+) => {
+
+  const instructor =
+    await InstructorProfile.findOne({
+      userId,
+    });
+
+  if (!instructor) {
+    throw new Error(
+      "Instructor profile not found"
+    );
+  }
+
+  const lecture =
+    await CourseLecture.findById(
+      lectureId
+    );
+
+  if (!lecture) {
+    throw new Error(
+      "Lecture not found"
+    );
+  }
+
+  const course =
+    await Course.findOne({
+
+      _id: lecture.courseId,
+
+      instructorId: instructor._id,
+
+      isDeleted: false,
+
+    });
+
+  if (!course) {
+    throw new Error(
+      "Unauthorized"
+    );
+  }
+
+  return {
+
+    lectureId:
+      lecture._id,
+
+    status:
+      lecture.video.processingStatus,
+
+    error:
+      lecture.video.processingError,
+
+    streamUrl:
+      lecture.video.masterPlaylist,
+
+  };
+
+};
+
 module.exports = {
   createLecture,
   getLecturesBySection,
   updateLecture,
   deleteLecture,
+
+  updateLectureResource,
+  deleteLectureResource,
+
+  markLectureProcessing,
+  removeLectureVideo,
+  getLectureVideoStatus,
 };

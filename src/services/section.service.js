@@ -66,8 +66,27 @@ const createSection = async (
 };
 
 const getSections = async (
-  courseId
+  courseId,
+  userId
 ) => {
+
+  const instructor =
+    await InstructorProfile.findOne({
+      userId,
+    });
+
+  const course =
+    await Course.findOne({
+      _id: courseId,
+      instructorId: instructor?._id,
+      isDeleted: false,
+    });
+
+  if (!course) {
+    throw new Error(
+      "Course not found or access denied"
+    );
+  }
 
   return await CourseSection.find({
     courseId,

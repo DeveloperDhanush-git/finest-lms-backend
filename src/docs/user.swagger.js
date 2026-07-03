@@ -7,45 +7,7 @@
  * components:
  *   schemas:
  *     UserProfileData:
- *       type: object
- *       properties:
- *         id:
- *           type: string
- *           example: 6a27fb3ba32d70b3dac8eda7
- *         firstName:
- *           type: string
- *           example: John
- *         lastName:
- *           type: string
- *           example: Doe
- *         fullName:
- *           type: string
- *           example: John Doe
- *         email:
- *           type: string
- *           format: email
- *           example: john.doe@example.com
- *         role:
- *           type: string
- *           example: student
- *         avatar:
- *           type: string
- *           nullable: true
- *           example: null
- *         phone:
- *           type: string
- *           nullable: true
- *           example: null
- *         countryCode:
- *           type: string
- *           example: +91
- *         accountStatus:
- *           type: string
- *           example: active
- *         createdAt:
- *           type: string
- *           format: date-time
- *           example: 2026-06-09T11:38:35.631Z
+ *       $ref: '#/components/schemas/User'
  *
  *     UserProfileResponse:
  *       type: object
@@ -91,6 +53,28 @@
  *         message:
  *           type: string
  *           example: Account deleted successfully
+ *
+ *     ChangePasswordRequest:
+ *       type: object
+ *       required:
+ *         - currentPassword
+ *         - newPassword
+ *         - confirmPassword
+ *       properties:
+ *         currentPassword:
+ *           type: string
+ *           format: password
+ *           example: OldSecurePass@123
+ *         newPassword:
+ *           type: string
+ *           format: password
+ *           minLength: 8
+ *           maxLength: 30
+ *           example: NewSecurePass@456
+ *         confirmPassword:
+ *           type: string
+ *           format: password
+ *           example: NewSecurePass@456
  */
 
 /**
@@ -98,7 +82,12 @@
  * /users/profile:
  *   get:
  *     summary: Get current user profile
- *     description: Returns the authenticated user's profile details.
+ *     description: |
+ *             Fetches the authenticated user's profile details.
+ *             This endpoint exists so the frontend can display the user's account information.
+ *             Frontend usage:
+ *               - Profile page
+ *               - Account summary in the dashboard
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
@@ -124,7 +113,11 @@
  *
  *   patch:
  *     summary: Update current user profile
- *     description: Updates the authenticated user's profile fields.
+ *     description: |
+ *             Updates the authenticated user's profile data.
+ *             This endpoint exists so users can edit and save their personal information.
+ *             Frontend usage:
+ *               - Edit profile form submissions
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
@@ -171,7 +164,11 @@
  *
  *   delete:
  *     summary: Delete current user profile
- *     description: Soft deletes the authenticated user's account and revokes refresh tokens.
+ *     description: |
+ *             Soft deletes the authenticated user's account and removes access.
+ *             This endpoint exists to support account deletion requests.
+ *             Frontend usage:
+ *               - Account removal option in settings
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
@@ -195,3 +192,109 @@
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
+
+/**
+ * @swagger
+ * /users/avatar:
+ *   post:
+ *     summary: Update user avatar
+ *     description: |
+ *             Uploads or updates the authenticated user's avatar image.
+ *             This endpoint exists to let users personalize their profile picture.
+ *             Frontend usage:
+ *               - Profile picture upload action
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               avatar:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Avatar updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Avatar updated successfully
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     avatar:
+ *                       type: string
+ *                       example: https://res.cloudinary.com/demo/image/upload/v1631234567/profiles/abc123.jpg
+ *                     avatarKey:
+ *                       type: string
+ *                       example: profiles/abc123
+ */
+
+/**
+ * @swagger
+ * /users/avatar:
+ *   delete:
+ *     summary: Remove user avatar
+ *     description: |
+ *             Removes the authenticated user's avatar image.
+ *             This endpoint exists so users can clear or remove their profile photo.
+ *             Frontend usage:
+ *               - Remove avatar option in user profile
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Avatar removed successfully
+ */
+
+/**
+ * @swagger
+ * /users/change-password:
+ *   patch:
+ *     summary: Change user password
+ *     description: |
+ *             Changes the authenticated user's password after verifying the current password.
+ *             This endpoint exists to allow users to manage credentials securely.
+ *             Frontend usage:
+ *               - Change password page in account settings
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ChangePasswordRequest'
+ *     responses:
+ *       200:
+ *         description: Password changed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Password changed successfully. All sessions have been revoked.
+ *       400:
+ *         description: Validation error or invalid current password
+ *       401:
+ *         description: Unauthorized
+ */
+

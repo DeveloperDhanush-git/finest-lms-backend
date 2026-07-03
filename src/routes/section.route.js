@@ -42,6 +42,10 @@ router.post(
 router.get(
   "/course/:courseId",
   authMiddleware,
+  roleMiddleware(
+    "instructor",
+    "admin"
+  ),
   getSections
 );
 

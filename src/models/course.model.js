@@ -27,20 +27,45 @@ const courseSchema = new mongoose.Schema(
     },
 
     description: {
-      type: String,
-      required: true,
-    },
+  type: String,
+  required: true,
+},
 
-    thumbnail: {
+thumbnail: {
+  type: String,
+  default: null,
+},
+
+thumbnailKey: {
+  type: String,
+  default: null,
+},
+
+previewVideo: {
+  type: {
+    url: {
       type: String,
       default: null,
     },
-
-    previewVideo: {
+    key: {
       type: String,
       default: null,
     },
-
+    duration: {
+      type: Number,
+      default: 0,
+    },
+    size: {
+      type: Number,
+      default: 0,
+    },
+    mimeType: {
+      type: String,
+      default: null,
+    },
+  },
+  default: null,
+},
     language: {
       type: String,
       default: "English",
