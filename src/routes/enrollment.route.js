@@ -10,17 +10,9 @@ const validate =
 const {
   enrollCourse,
   getMyEnrollments,
-  getEnrolledCourse,
   checkEnrollment,
-  updateProgress,
 } = require(
   "../controllers/enrollment.controller"
-);
-
-const {
-  updateProgressSchema,
-} = require(
-  "../validation/enrollment.validation"
 );
 
 router.post(
@@ -36,24 +28,9 @@ router.get(
 );
 
 router.get(
-  "/course/:courseId",
-  authMiddleware,
-  getEnrolledCourse
-);
-
-router.get(
   "/check/:courseId",
   authMiddleware,
   checkEnrollment
-);
-
-router.patch(
-  "/progress",
-  authMiddleware,
-  validate(
-    updateProgressSchema
-  ),
-  updateProgress
 );
 
 module.exports =

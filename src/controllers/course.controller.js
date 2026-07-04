@@ -1,5 +1,8 @@
 const courseService =
   require("../services/course.service");
+
+const publicCourseService = require("../services/publicCourse.service")
+
 const fs = require("fs-extra");
 const path = require("path");
 const { randomUUID } = require("crypto");

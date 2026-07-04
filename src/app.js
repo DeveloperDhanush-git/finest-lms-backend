@@ -60,6 +60,9 @@ const streamRoutes = require("./routes/stream.route");
 const cartRoutes = require("./routes/cart.route");
 const paymentRoutes = require("./routes/payment.route");
 const reviewRoutes = require("./routes/review.route");
+const studentRoutes = require("./routes/student.route")
+const certificateRoutes = require("./routes/certificate.route");
+
 app.get('/', (req, res) => {
     res.send('Welcome to the Finest LMS API!');
 });
@@ -78,6 +81,8 @@ app.use("/api/stream", streamRoutes);
 app.use("/api/cart",cartRoutes);
 app.use("/api/payments",paymentRoutes);
 app.use("/api/reviews",reviewRoutes);
+app.use("/api/student",studentRoutes);
+app.use( "/api/certificates", certificateRoutes);
 
 app.use((err, req, res, next) => {
     const statusCode = err.statusCode || 500;

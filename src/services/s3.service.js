@@ -199,6 +199,43 @@ const deleteDirectoryFromS3 = async (
 
 };
 
+const uploadCertificateToS3 =
+async (
+    filePath,
+    key
+)=>{
+
+    const fileContent =
+        fs.readFileSync(filePath);
+
+    const command =
+        new PutObjectCommand({
+
+            Bucket:process.env.AWS_BUCKET,
+
+            Key:key,
+
+            Body:fileContent,
+
+            ContentType:
+                "application/pdf"
+
+        });
+
+    await s3.send(command);
+
+    fs.unlinkSync(filePath);
+
+    return {
+
+        key,
+
+        url:`${process.env.CLOUDFRONT_URL}/${key}`
+
+    };
+
+};
+
 module.exports = {
 
     uploadFileToS3,
@@ -206,5 +243,7 @@ module.exports = {
     deleteFileFromS3,
 
     deleteDirectoryFromS3,
+
+    uploadCertificateToS3,
 
 };

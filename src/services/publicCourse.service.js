@@ -5,6 +5,7 @@ const CourseSection =
 
 const CourseLecture =
   require("../models/lecture.model");
+const { getSearchSuggestions } = require("./course.service");
   
 const getPublicCourses = async (query) => {
   const {
@@ -387,4 +388,5 @@ const getPublicCourseById =
 module.exports = {
   getPublicCourses,
   getPublicCourseById,
+  getSearchSuggestions,
 };

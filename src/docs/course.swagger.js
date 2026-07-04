@@ -336,6 +336,47 @@
 
 /**
  * @swagger
+ * /courses/search/suggestions:
+ *   get:
+ *     summary: Get course search suggestions
+ *     description: |
+ *             Retrieves keyword-based search suggestions for courses.
+ *             Frontend usage:
+ *               - Search autocomplete and suggestion dropdowns
+ *     tags: [Courses]
+ *     parameters:
+ *       - in: query
+ *         name: q
+ *         required: false
+ *         schema:
+ *           type: string
+ *         description: Search query term
+ *     responses:
+ *       200:
+ *         description: Suggestions returned successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       title:
+ *                         type: string
+ *                       courseId:
+ *                         type: string
+ *       400:
+ *         description: Invalid search query
+ */
+
+/**
+ * @swagger
  * /courses/{id}:
  *   get:
  *     summary: Get course details by ID

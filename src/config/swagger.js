@@ -33,6 +33,8 @@ const options = {
       { name: "Stream", description: "Streaming and video delivery endpoints" },
       { name: "Cart", description: "Shopping cart management for students (add, view, remove courses)" },
       { name: "Payments", description: "Payment checkout, verification, and history endpoints" },
+      { name: "Reviews", description: "Course review and rating endpoints" },
+      { name: "Student", description: "Student learning and progress endpoints" },
     ],
     components: {
       securitySchemes: {

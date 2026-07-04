@@ -49,30 +49,6 @@ const getMyEnrollments =
     }
   };
 
-const getEnrolledCourse =
-  async (
-    req,
-    res,
-    next
-  ) => {
-    try {
-
-      const course =
-        await enrollmentService.getEnrolledCourse(
-          req.user._id,
-          req.params.courseId
-        );
-
-      return res.status(200).json({
-        success: true,
-        data: course,
-      });
-
-    } catch (error) {
-      next(error);
-    }
-  };
-
 const checkEnrollment =
   async (
     req,
@@ -97,37 +73,8 @@ const checkEnrollment =
     }
   };
 
-const updateProgress =
-  async (
-    req,
-    res,
-    next
-  ) => {
-    try {
-
-      const enrollment =
-        await enrollmentService.updateProgress(
-          req.user._id,
-          req.body.courseId,
-          req.body.lectureId
-        );
-
-      return res.status(200).json({
-        success: true,
-        message:
-          "Progress updated successfully",
-        data: enrollment,
-      });
-
-    } catch (error) {
-      next(error);
-    }
-  };
-
 module.exports = {
   enrollCourse,
   getMyEnrollments,
-  getEnrolledCourse,
   checkEnrollment,
-  updateProgress,
 };
