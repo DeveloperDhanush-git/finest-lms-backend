@@ -1,63 +1,29 @@
-const { Worker } =
-  require("bullmq");
+const { Worker } = require('bullmq');
 
-const redis =
-  require("../config/redis");
+const redis = require('../config/redis');
 
-const {
-  processVideoPipeline,
-} = require(
-  "../services/video/videoPipeline.service"
-);
+const { processVideoPipeline } = require('../services/video/videoPipeline.service');
 
-const worker =
-  new Worker(
+const worker = new Worker(
+  'video-processing',
 
-    "video-processing",
+  async (job) => {
+    console.log('Processing:', job.data.lectureId);
 
-    async (job) => {
+    await processVideoPipeline(job.data);
+  },
 
-      console.log(
-        "🎬 Processing:",
-        job.data.lectureId
-      );
-
-      await processVideoPipeline(
-        job.data
-      );
-
-    },
-
-    {
-      connection:
-        redis,
-    }
-
-  );
-
-worker.on(
-  "completed",
-  (job) => {
-
-    console.log(
-      `✅ Job ${job.id} completed`
-    );
-
+  {
+    connection: redis,
   }
 );
 
-worker.on(
-  "failed",
-  (job, err) => {
+worker.on('completed', (job) => {
+  console.log(`Job ${job.id} completed`);
+});
 
-    console.error(
-      `❌ Job ${job?.id} failed`,
-      err
-    );
+worker.on('failed', (job, err) => {
+  console.error(`Job ${job?.id} failed`, err);
+});
 
-  }
-);
-
-console.log(
-  "🎬 Video Worker Started"
-);
+console.log('Video Worker Started');

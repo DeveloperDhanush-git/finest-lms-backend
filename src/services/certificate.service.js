@@ -1,177 +1,82 @@
-const crypto = require("crypto");
-const path = require("path");
-const { v4: uuid } = require("uuid");
+const crypto = require('crypto');
+const path = require('path');
+const { v4: uuid } = require('uuid');
 
-const User = require("../models/user.model");
-const InstructorProfile = require("../models/instructor.model");
+const User = require('../models/user.model');
+const InstructorProfile = require('../models/instructor.model');
 
-const generateCertificatePdf = require("../utils/generateCertificatePdf");
+const generateCertificatePdf = require('../utils/generateCertificatePdf');
 
-const {
-  uploadCertificateToS3,
-} = require("./s3.service");
+const { uploadCertificateToS3 } = require('./s3.service');
 
-const Certificate = require("../models/certificate.model");
-const Enrollment = require("../models/enrollment.model");
-const Course = require("../models/course.model");
+const Certificate = require('../models/certificate.model');
+const Enrollment = require('../models/enrollment.model');
+const Course = require('../models/course.model');
 
-/*
-------------------------------------------
-Generate Certificate Number
-------------------------------------------
-*/
+const generateCertificateNumber = async () => {
+  const year = new Date().getFullYear();
 
-const generateCertificateNumber =
-  async () => {
+  const total = await Certificate.countDocuments();
 
-    const year =
-      new Date().getFullYear();
+  return `FINEST-${year}-${String(total + 1).padStart(6, '0')}`;
+};
 
-    const total =
-      await Certificate.countDocuments();
+const generateVerificationCode = () => {
+  return crypto.randomBytes(6).toString('hex').toUpperCase();
+};
 
-    return `FINEST-${year}-${String(total + 1).padStart(6, "0")}`;
-
-  };
-
-/*
-------------------------------------------
-Generate Verification Code
-------------------------------------------
-*/
-
-const generateVerificationCode =
-  () => {
-
-    return crypto
-      .randomBytes(6)
-      .toString("hex")
-      .toUpperCase();
-
-  };
-
-/*
-------------------------------------------
-Generate Certificate
-------------------------------------------
-*/
-
-const generateCertificate = async (
-  userId,
-  courseId
-) => {
-
-  const enrollment =
-    await Enrollment.findOne({
-      studentId: userId,
-      courseId,
-    });
+const generateCertificate = async (userId, courseId) => {
+  const enrollment = await Enrollment.findOne({
+    studentId: userId,
+    courseId,
+  });
 
   if (!enrollment) {
-    throw new Error(
-      "You are not enrolled in this course."
-    );
+    throw new Error('You are not enrolled in this course.');
   }
 
-  if (
-    enrollment.status !==
-    "completed"
-  ) {
-    throw new Error(
-      "Complete the course before generating certificate."
-    );
+  if (enrollment.status !== 'completed') {
+    throw new Error('Complete the course before generating certificate.');
   }
 
-  const exists =
-    await Certificate.findOne({
-      studentId: userId,
-      courseId,
-    });
+  const exists = await Certificate.findOne({
+    studentId: userId,
+    courseId,
+  });
 
   if (exists) {
     return exists;
   }
 
-  /*
-  ----------------------------------------
-  Fetch Course
-  ----------------------------------------
-  */
-
-  const course =
-    await Course.findById(courseId);
+  const course = await Course.findById(courseId);
 
   if (!course) {
-    throw new Error(
-      "Course not found."
-    );
+    throw new Error('Course not found.');
   }
+  const student = await User.findById(userId);
 
-  /*
-  ----------------------------------------
-  Fetch Student
-  ----------------------------------------
-  */
+  const instructor = await InstructorProfile.findById(course.instructorId).populate(
+    'userId',
+    'firstName lastName'
+  );
 
-  const student =
-    await User.findById(userId);
+  const certificateNumber = await generateCertificateNumber();
 
-  /*
-  ----------------------------------------
-  Fetch Instructor
-  ----------------------------------------
-  */
+  const verificationCode = generateVerificationCode();
 
-  const instructor =
-    await InstructorProfile
-      .findById(course.instructorId)
-      .populate(
-        "userId",
-        "firstName lastName"
-      );
+  const filename = `${uuid()}.pdf`;
 
-  /*
-  ----------------------------------------
-  Generate Numbers
-  ----------------------------------------
-  */
+  const outputPath = path.join(process.cwd(), 'temp', 'certificates', filename);
 
-  const certificateNumber =
-    await generateCertificateNumber();
-
-  const verificationCode =
-    generateVerificationCode();
-
-  /*
-  ----------------------------------------
-  Generate PDF
-  ----------------------------------------
-  */
-
-  const filename =
-    `${uuid()}.pdf`;
-
-  const outputPath =
-    path.join(
-      process.cwd(),
-      "temp",
-      "certificates",
-      filename
-    );
-
-    await generateCertificatePdf(
+  await generateCertificatePdf(
     {
-      studentName:
-        `${student.firstName} ${student.lastName}`,
+      studentName: `${student.firstName} ${student.lastName}`,
 
-      courseTitle:
-        course.title,
+      courseTitle: course.title,
 
-      instructor:
-        `${instructor.userId.firstName} ${instructor.userId.lastName}`,
+      instructor: `${instructor.userId.firstName} ${instructor.userId.lastName}`,
 
-      date:
-        new Date().toLocaleDateString(),
+      date: new Date().toLocaleDateString(),
 
       certificateNumber,
 
@@ -180,203 +85,112 @@ const generateCertificate = async (
     outputPath
   );
 
-  /*
-  ----------------------------------------
-  Upload To S3
-  ----------------------------------------
-  */
+  const key = `certificates/${userId}/${filename}`;
 
-  const key =
-    `certificates/${userId}/${filename}`;
+  const upload = await uploadCertificateToS3(outputPath, key);
 
-  const upload =
-    await uploadCertificateToS3(
-      outputPath,
-      key
-    );
+  const certificate = await Certificate.create({
+    studentId: userId,
 
-  /*
-  ----------------------------------------
-  Save Certificate
-  ----------------------------------------
-  */
+    courseId,
 
-  const certificate =
-    await Certificate.create({
+    enrollmentId: enrollment._id,
 
-      studentId: userId,
+    certificateNumber,
 
-      courseId,
+    verificationCode,
 
-      enrollmentId:
-        enrollment._id,
+    certificateUrl: upload.url,
 
-      certificateNumber,
+    certificateKey: upload.key,
+  });
 
-      verificationCode,
+  enrollment.certificateIssued = true;
 
-      certificateUrl:
-        upload.url,
-
-      certificateKey:
-        upload.key,
-
-    });
-
-  /*
-  ----------------------------------------
-  Update Enrollment
-  ----------------------------------------
-  */
-
-  enrollment.certificateIssued =
-    true;
-
-  enrollment.certificateIssuedAt =
-    new Date();
+  enrollment.certificateIssuedAt = new Date();
 
   await enrollment.save();
 
   return certificate;
-
 };
 
-/*
-------------------------------------------
-My Certificates
-------------------------------------------
-*/
-
-const getMyCertificates =
-  async (userId) => {
-
-    return await Certificate.find({
-      studentId: userId,
-      isRevoked: false,
+const getMyCertificates = async (userId) => {
+  return await Certificate.find({
+    studentId: userId,
+    isRevoked: false,
+  })
+    .populate({
+      path: 'courseId',
+      select: 'title thumbnail averageRating',
     })
-      .populate({
-        path: "courseId",
-        select:
-          "title thumbnail averageRating",
-      })
-      .sort({
-        issuedAt: -1,
-      });
+    .sort({
+      issuedAt: -1,
+    });
+};
 
+const getCertificateByCourse = async (userId, courseId) => {
+  const certificate = await Certificate.findOne({
+    studentId: userId,
+    courseId,
+    isRevoked: false,
+  })
+    .populate({
+      path: 'courseId',
+      select: 'title thumbnail',
+    })
+    .populate({
+      path: 'studentId',
+      select: 'firstName lastName email',
+    });
+
+  if (!certificate) {
+    throw new Error('Certificate not found.');
+  }
+
+  return certificate;
+};
+
+const downloadCertificate = async (userId, courseId) => {
+  const certificate = await Certificate.findOne({
+    studentId: userId,
+    courseId,
+    isRevoked: false,
+  });
+
+  if (!certificate) {
+    throw new Error('Certificate not found.');
+  }
+
+  return {
+    url: certificate.certificateUrl,
   };
+};
 
-/*
-------------------------------------------
-Course Certificate
-------------------------------------------
-*/
+const verifyCertificate = async (verificationCode) => {
+  const certificate = await Certificate.findOne({
+    verificationCode,
+  })
+    .populate({
+      path: 'studentId',
+      select: 'firstName lastName',
+    })
+    .populate({
+      path: 'courseId',
+      populate: {
+        path: 'instructorId',
+        populate: {
+          path: 'userId',
+          select: 'firstName lastName',
+        },
+      },
+    });
 
-const getCertificateByCourse =
-  async (
-    userId,
-    courseId
-  ) => {
+  if (!certificate) {
+    throw new Error('Invalid certificate.');
+  }
 
-    const certificate =
-      await Certificate.findOne({
-        studentId: userId,
-        courseId,
-        isRevoked: false,
-      })
-        .populate({
-          path: "courseId",
-          select:
-            "title thumbnail",
-        })
-        .populate({
-          path: "studentId",
-          select:
-            "firstName lastName email",
-        });
-
-    if (!certificate) {
-      throw new Error(
-        "Certificate not found."
-      );
-    }
-
-    return certificate;
-
-  };
-
-/*
-------------------------------------------
-Download Certificate
-------------------------------------------
-*/
-
-const downloadCertificate =
-  async (
-    userId,
-    courseId
-  ) => {
-
-    const certificate =
-      await Certificate.findOne({
-        studentId: userId,
-        courseId,
-        isRevoked: false,
-      });
-
-    if (!certificate) {
-      throw new Error(
-        "Certificate not found."
-      );
-    }
-
-    return {
-      url:
-        certificate.certificateUrl,
-    };
-
-  };
-
-/*
-------------------------------------------
-Verify Certificate
-------------------------------------------
-*/
-
-const verifyCertificate =
-  async (
-    verificationCode
-  ) => {
-
-    const certificate =
-      await Certificate.findOne({
-        verificationCode,
-      })
-        .populate({
-          path: "studentId",
-          select:
-            "firstName lastName",
-        })
-        .populate({
-          path: "courseId",
-          populate: {
-            path: "instructorId",
-            populate: {
-              path: "userId",
-              select:
-                "firstName lastName",
-            },
-          },
-        });
-
-    if (!certificate) {
-      throw new Error(
-        "Invalid certificate."
-      );
-    }
-
-    return certificate;
-
-  };
+  return certificate;
+};
 
 module.exports = {
   generateCertificate,

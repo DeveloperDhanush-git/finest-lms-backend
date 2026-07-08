@@ -1,11 +1,8 @@
-const router =
-  require("express").Router();
+const router = require('express').Router();
 
-const authMiddleware =
-  require("../middlewares/auth.middleware");
+const authMiddleware = require('../middlewares/auth.middleware');
 
-const roleMiddleware =
-  require("../middlewares/role.middleware");
+const roleMiddleware = require('../middlewares/role.middleware');
 
 const {
   generateCertificate,
@@ -13,71 +10,21 @@ const {
   getCertificateByCourse,
   downloadCertificate,
   verifyCertificate,
-} = require(
-  "../controllers/certificate.controller"
-);
+} = require('../controllers/certificate.controller');
 
-/*
------------------------------------------
-Generate Certificate
------------------------------------------
-*/
+router.post('/course/:courseId', authMiddleware, roleMiddleware('student'), generateCertificate);
 
-router.post(
-  "/course/:courseId",
-  authMiddleware,
-  roleMiddleware("student"),
-  generateCertificate
-);
+router.get('/', authMiddleware, roleMiddleware('student'), getMyCertificates);
 
-/*
------------------------------------------
-My Certificates
------------------------------------------
-*/
+router.get('/course/:courseId', authMiddleware, roleMiddleware('student'), getCertificateByCourse);
 
 router.get(
-  "/",
+  '/course/:courseId/download',
   authMiddleware,
-  roleMiddleware("student"),
-  getMyCertificates
-);
-
-/*
------------------------------------------
-Course Certificate
------------------------------------------
-*/
-
-router.get(
-  "/course/:courseId",
-  authMiddleware,
-  roleMiddleware("student"),
-  getCertificateByCourse
-);
-
-/*
------------------------------------------
-Download Certificate
------------------------------------------
-*/
-
-router.get(
-  "/course/:courseId/download",
-  authMiddleware,
-  roleMiddleware("student"),
+  roleMiddleware('student'),
   downloadCertificate
 );
 
-/*
------------------------------------------
-Public Verification
------------------------------------------
-*/
-
-router.get(
-  "/verify/:verificationCode",
-  verifyCertificate
-);
+router.get('/verify/:verificationCode', verifyCertificate);
 
 module.exports = router;

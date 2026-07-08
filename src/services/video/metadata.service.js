@@ -1,61 +1,32 @@
-const ffmpeg =
-  require("fluent-ffmpeg");
+const ffmpeg = require('fluent-ffmpeg');
 
-const getVideoMetadata =
-  (videoPath) => {
+const getVideoMetadata = (videoPath) => {
+  return new Promise((resolve, reject) => {
+    ffmpeg.ffprobe(
+      videoPath,
 
-    return new Promise(
-      (resolve, reject) => {
+      (err, metadata) => {
+        if (err) return reject(err);
 
-        ffmpeg.ffprobe(
-          videoPath,
+        const video = metadata.streams.find((stream) => stream.codec_type === 'video');
 
-          (
-            err,
-            metadata
-          ) => {
+        resolve({
+          duration: metadata.format.duration,
 
-            if (err)
-              return reject(err);
+          bitrate: metadata.format.bit_rate,
 
-            const video =
-              metadata.streams.find(
-                stream =>
-                  stream.codec_type ===
-                  "video"
-              );
+          width: video.width,
 
-            resolve({
+          height: video.height,
 
-              duration:
-                metadata.format.duration,
+          codec: video.codec_name,
 
-              bitrate:
-                metadata.format.bit_rate,
-
-              width:
-                video.width,
-
-              height:
-                video.height,
-
-              codec:
-                video.codec_name,
-
-              fps:
-                eval(
-                  video.r_frame_rate
-                ),
-
-            });
-
-          }
-        );
-
+          fps: eval(video.r_frame_rate),
+        });
       }
     );
-
-  };
+  });
+};
 
 module.exports = {
   getVideoMetadata,

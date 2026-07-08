@@ -1,17 +1,17 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
 const reviewSchema = new mongoose.Schema(
   {
     studentId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: 'User',
       required: true,
       index: true,
     },
 
     courseId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Course",
+      ref: 'Course',
       required: true,
       index: true,
     },
@@ -41,12 +41,6 @@ const reviewSchema = new mongoose.Schema(
   }
 );
 
-/*
----------------------------------
-One Review Per Student Per Course
----------------------------------
-*/
-
 reviewSchema.index(
   {
     studentId: 1,
@@ -57,18 +51,9 @@ reviewSchema.index(
   }
 );
 
-/*
----------------------------------
-Course Reviews
----------------------------------
-*/
-
 reviewSchema.index({
   courseId: 1,
   createdAt: -1,
 });
 
-module.exports = mongoose.model(
-  "Review",
-  reviewSchema
-);
+module.exports = mongoose.model('Review', reviewSchema);

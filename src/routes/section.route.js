@@ -23,7 +23,7 @@ const {
   createSectionSchema,
   updateSectionSchema,
 } = require(
-  "../validation/section.validation"
+  "../validations/section.validation"
 );
 
 router.post(

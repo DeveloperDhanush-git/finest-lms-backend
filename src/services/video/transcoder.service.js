@@ -1,239 +1,104 @@
-const ffmpeg = require("fluent-ffmpeg");
-const fs = require("fs-extra");
-const path = require("path");
+const ffmpeg = require('fluent-ffmpeg');
+const fs = require('fs-extra');
+const path = require('path');
 
-const {
-  getVideoMetadata,
-} = require("./metadata.service");
+const { getVideoMetadata } = require('./metadata.service');
 
-const {
-  getProfiles,
-} = require("./profile.service");
+const { getProfiles } = require('./profile.service');
 
-const {
-  createMasterPlaylist,
-} = require("./masterPlaylist.service");
+const { createMasterPlaylist } = require('./masterPlaylist.service');
 
-const generateProfile = (
-  input,
-  outputFolder,
-  profile
-) => {
+const generateProfile = (input, outputFolder, profile) => {
+  return new Promise(async (resolve, reject) => {
+    await fs.ensureDir(outputFolder);
 
-  return new Promise(
-    async (
-      resolve,
-      reject
-    ) => {
+    ffmpeg(input)
+      .videoCodec('libx264')
 
-      await fs.ensureDir(
-        outputFolder
-      );
+      .audioCodec('aac')
 
-      ffmpeg(input)
+      .size(`${profile.width}x${profile.height}`)
 
-        .videoCodec("libx264")
+      .videoBitrate(profile.bitrate)
 
-        .audioCodec("aac")
+      .audioBitrate('128k')
 
-        .size(
-          `${profile.width}x${profile.height}`
-        )
+      .outputOptions([
+        '-preset veryfast',
 
-        .videoBitrate(
-          profile.bitrate
-        )
+        '-profile:v main',
 
-        .audioBitrate("128k")
+        '-crf 20',
 
-        .outputOptions([
+        '-sc_threshold 0',
 
-          "-preset veryfast",
+        '-g 48',
 
-          "-profile:v main",
+        '-keyint_min 48',
 
-          "-crf 20",
+        '-hls_time 6',
 
-          "-sc_threshold 0",
+        '-hls_playlist_type vod',
 
-          "-g 48",
+        '-hls_flags independent_segments',
 
-          "-keyint_min 48",
+        '-hls_segment_filename ' + path.join(outputFolder, 'segment_%03d.ts'),
+      ])
 
-          "-hls_time 6",
+      .output(path.join(outputFolder, 'index.m3u8'))
 
-          "-hls_playlist_type vod",
+      .on('start', (command) => {
+        console.log(`${profile.name} started`);
+      })
 
-          "-hls_flags independent_segments",
+      .on('progress', (progress) => {
+        if (progress.percent) {
+          process.stdout.write(`\r${profile.name}: ${progress.percent.toFixed(1)}%`);
+        }
+      })
 
-          "-hls_segment_filename " +
-          path.join(
-            outputFolder,
-            "segment_%03d.ts"
-          ),
+      .on('end', () => {
+        console.log(`\n${profile.name} completed`);
 
-        ])
+        resolve();
+      })
 
-        .output(
-          path.join(
-            outputFolder,
-            "index.m3u8"
-          )
-        )
+      .on('error', (error) => {
+        console.error(`${profile.name} failed`);
 
-        .on(
-          "start",
-          command => {
+        reject(error);
+      })
 
-            console.log(
-              `${profile.name} started`
-            );
-
-          }
-        )
-
-        .on(
-          "progress",
-          progress => {
-
-            if (
-              progress.percent
-            ) {
-
-              process.stdout.write(
-                `\r${profile.name}: ${progress.percent.toFixed(1)}%`
-              );
-
-            }
-
-          }
-        )
-
-        .on(
-          "end",
-          () => {
-
-            console.log(
-              `\n${profile.name} completed`
-            );
-
-            resolve();
-
-          }
-        )
-
-        .on(
-          "error",
-          error => {
-
-            console.error(
-              `${profile.name} failed`
-            );
-
-            reject(error);
-
-          }
-        )
-
-        .run();
-
-    }
-  );
-
+      .run();
+  });
 };
 
-const transcodeVideo =
-  async (
-    inputPath,
-    outputRoot
-  ) => {
+const transcodeVideo = async (inputPath, outputRoot) => {
 
-    /*
-    -------------------------------
-    Extract Metadata
-    -------------------------------
-    */
+  const metadata = await getVideoMetadata(inputPath);
 
-    const metadata =
-      await getVideoMetadata(
-        inputPath
-      );
+  const profiles = getProfiles(metadata);
 
-    /*
-    -------------------------------
-    Determine Profiles
-    -------------------------------
-    */
+  console.log('Profiles:');
 
-    const profiles =
-      getProfiles(
-        metadata
-      );
+  console.table(profiles);
 
-    console.log(
-      "Profiles:"
-    );
+  for (const profile of profiles) {
+    const folder = path.join(outputRoot, profile.name);
 
-    console.table(
-      profiles
-    );
+    await generateProfile(inputPath, folder, profile);
+  }
 
-    /*
-    -------------------------------
-    Generate HLS
-    -------------------------------
-    */
+  await createMasterPlaylist(outputRoot, profiles);
 
-    for (const profile of profiles) {
+  console.log('Master Playlist Created');
 
-      const folder =
-        path.join(
-          outputRoot,
-          profile.name
-        );
+  return {
+    metadata,
 
-      await generateProfile(
-        inputPath,
-        folder,
-        profile
-      );
-
-    }
-
-    /*
-    -------------------------------
-    Master Playlist
-    -------------------------------
-    */
-
-    await createMasterPlaylist(
-      outputRoot,
-      profiles
-    );
-
-    console.log(
-      "Master Playlist Created"
-    );
-
-    /*
-    -------------------------------
-    Return Everything
-    -------------------------------
-    */
-
-    return {
-
-      metadata,
-
-      generatedQualities:
-        profiles.map(
-          profile =>
-            profile.name
-        ),
-
-    };
-
+    generatedQualities: profiles.map((profile) => profile.name),
   };
+};
 
 module.exports = {
   transcodeVideo,

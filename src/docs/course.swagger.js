@@ -1,4 +1,4 @@
-/**
+    /**
  * @swagger
  * tags:
  *   name: Courses
@@ -109,7 +109,7 @@
  *           example: [javascript, web-development, programming, es6, frontend]
  *         status:
  *           type: string
- *           enum: [draft, pending_review, published, rejected, archived]
+ *           enum: [draft, pending, published, rejected]
  *           example: published
  *         isDeleted:
  *           type: boolean
@@ -528,14 +528,14 @@
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *
- * /courses/{id}/publish:
- *   post:
- *     summary: Publish a course
+ * /courses/{id}/submit:
+ *   patch:
+ *     summary: Submit a course for admin review
  *     description: |
- *             Publishes a course to make it visible to students.
- *             This endpoint exists to change a course from draft to live status.
+ *             Submits a course for review by changing its status to pending.
+ *             The course must include a title, description, thumbnail, category, sections, lectures, requirements, and learning objectives.
  *             Frontend usage:
- *               - Publish button in the course editor
+ *               - Submit for review button in the instructor dashboard
  *     tags: [Courses]
  *     security:
  *       - bearerAuth: []
@@ -560,7 +560,61 @@
  *                   example: true
  *                 message:
  *                   type: string
- *                   example: Course published successfully
+ *                   example: Course submitted for review successfully
+ *                 data:
+ *                   $ref: '#/components/schemas/Course'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Forbidden - user is not the course owner
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Course not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *
+ * /courses/{id}/publish:
+ *   post:
+ *     summary: Publish a course (Submit for review)
+ *     description: |
+ *             Submits a course for review by changing its status to pending (equivalent to the submit endpoint).
+ *             The course must include a title, description, thumbnail, category, sections, lectures, requirements, and learning objectives.
+ *             Frontend usage:
+ *               - Publish button in the course editor
+ *     tags: [Courses]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Course ID
+ *         example: 64b2c3d4e5f6a7b8c9d0e1f2
+ *     responses:
+ *       200:
+ *         description: Course submitted for review successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Course submitted for review successfully
  *                 data:
  *                   $ref: '#/components/schemas/Course'
  *       401:

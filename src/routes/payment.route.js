@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
 
-const authMiddleware = require("../middlewares/auth.middleware");
-const roleMiddleware = require("../middlewares/role.middleware");
-const validate = require("../middlewares/validate.middleware");
+const authMiddleware = require('../middlewares/auth.middleware');
+const roleMiddleware = require('../middlewares/role.middleware');
+const validate = require('../middlewares/validate.middleware');
 
 const {
   createCheckout,
@@ -11,58 +11,33 @@ const {
   getPaymentHistory,
   getPaymentById,
   paymentWebhook,
-} = require("../controllers/payment.controller");
+} = require('../controllers/payment.controller');
 
-const {
-  verifyPaymentSchema,
-} = require("../validation/payment.validation");
+const { verifyPaymentSchema } = require('../validations/payment.validation');
 
-router.post(
-  "/checkout",
-  authMiddleware,
-  roleMiddleware("student"),
-  createCheckout
-);
+router.post('/checkout', authMiddleware, roleMiddleware('student'), createCheckout);
 
 router.post(
-  "/verify",
+  '/verify',
   authMiddleware,
-  roleMiddleware("student"),
-  validate(
-    verifyPaymentSchema
-  ),
+  roleMiddleware('student'),
+  validate(verifyPaymentSchema),
   verifyPayment
 );
 
-
 router.get(
-
-    "/",
-
-    authMiddleware,
-
-    roleMiddleware("student"),
-
-    getPaymentHistory
-
-);
-
-router.get(
-
-  "/:id",
-
+  '/',
   authMiddleware,
+  roleMiddleware('student'),
+  getPaymentHistory
+);
 
-  roleMiddleware("student"),
-
+router.get(
+  '/:id',
+  authMiddleware,
+  roleMiddleware('student'),
   getPaymentById
-
 );
-router.post(
-
-    "/webhook",
-    paymentWebhook
-
-);
+router.post('/webhook', paymentWebhook);
 
 module.exports = router;

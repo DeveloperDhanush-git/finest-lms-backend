@@ -1,15 +1,15 @@
-const s3 = require("../config/s3");
+const s3 = require('../config/s3');
 
 const {
-    PutObjectCommand,
-    DeleteObjectCommand,
-    ListObjectsV2Command,
-    DeleteObjectsCommand,
-} = require("@aws-sdk/client-s3");
+  PutObjectCommand,
+  DeleteObjectCommand,
+  ListObjectsV2Command,
+  DeleteObjectsCommand,
+} = require('@aws-sdk/client-s3');
 
-const fs = require("fs");
-const path = require("path");
-const mime = require("mime-types");
+const fs = require('fs');
+const path = require('path');
+const mime = require('mime-types');
 
 /**
  * Resolve Content-Type and Cache-Control based on file extension.
@@ -22,228 +22,145 @@ const mime = require("mime-types");
  *  - everything else  → 1-year max-age
  */
 const resolveHeaders = (filePath) => {
+  const extension = path.extname(filePath).toLowerCase();
 
-    const extension = path.extname(filePath).toLowerCase();
+  let contentType;
+  let cacheControl;
 
-    let contentType;
-    let cacheControl;
+  switch (extension) {
+    case '.m3u8':
+      contentType = 'application/vnd.apple.mpegurl';
+      cacheControl = 'no-cache, no-store, must-revalidate';
+      break;
 
-    switch (extension) {
+    case '.ts':
+      contentType = 'video/mp2t';
+      cacheControl = 'public, max-age=31536000, immutable';
+      break;
 
-        case ".m3u8":
-            contentType = "application/vnd.apple.mpegurl";
-            cacheControl = "no-cache, no-store, must-revalidate";
-            break;
+    case '.jpg':
+    case '.jpeg':
+    case '.png':
+    case '.webp':
+    case '.gif':
+    case '.svg':
+      contentType = mime.lookup(filePath) || 'application/octet-stream';
+      cacheControl = 'public, max-age=31536000, immutable';
+      break;
 
-        case ".ts":
-            contentType = "video/mp2t";
-            cacheControl = "public, max-age=31536000, immutable";
-            break;
+    case '.mp4':
+    case '.webm':
+    case '.mov':
+      contentType = mime.lookup(filePath) || 'application/octet-stream';
+      cacheControl = 'public, max-age=31536000, immutable';
+      break;
 
-        case ".jpg":
-        case ".jpeg":
-        case ".png":
-        case ".webp":
-        case ".gif":
-        case ".svg":
-            contentType =
-                mime.lookup(filePath) ||
-                "application/octet-stream";
-            cacheControl = "public, max-age=31536000, immutable";
-            break;
+    default:
+      contentType = mime.lookup(filePath) || 'application/octet-stream';
+      cacheControl = 'public, max-age=31536000, immutable';
+  }
 
-        case ".mp4":
-        case ".webm":
-        case ".mov":
-            contentType =
-                mime.lookup(filePath) ||
-                "application/octet-stream";
-            cacheControl = "public, max-age=31536000, immutable";
-            break;
+  return { contentType, cacheControl };
+};
 
-        default:
-            contentType =
-                mime.lookup(filePath) ||
-                "application/octet-stream";
-            cacheControl = "public, max-age=31536000, immutable";
+const uploadFileToS3 = async (localPath, key) => {
+  const fileStream = fs.createReadStream(localPath);
+
+  const { contentType, cacheControl } = resolveHeaders(localPath);
+
+  await s3.send(
+    new PutObjectCommand({
+      Bucket: process.env.AWS_BUCKET,
+
+      Key: key,
+
+      Body: fileStream,
+
+      ContentType: contentType,
+
+      CacheControl: cacheControl,
+    })
+  );
+
+  return `${process.env.CLOUDFRONT_URL}/${key}`;
+};
+
+const deleteFileFromS3 = async (key) => {
+  if (!key) return;
+
+  await s3.send(
+    new DeleteObjectCommand({
+      Bucket: process.env.AWS_BUCKET,
+
+      Key: key,
+    })
+  );
+};
+
+const deleteDirectoryFromS3 = async (prefix) => {
+  if (!prefix) return;
+
+  let continuationToken;
+
+  do {
+    const listed = await s3.send(
+      new ListObjectsV2Command({
+        Bucket: process.env.AWS_BUCKET,
+
+        Prefix: prefix,
+
+        ContinuationToken: continuationToken,
+      })
+    );
+
+    if (listed.Contents && listed.Contents.length > 0) {
+      await s3.send(
+        new DeleteObjectsCommand({
+          Bucket: process.env.AWS_BUCKET,
+
+          Delete: {
+            Objects: listed.Contents.map(({ Key }) => ({
+              Key,
+            })),
+          },
+        })
+      );
     }
 
-    return { contentType, cacheControl };
+    continuationToken = listed.IsTruncated ? listed.NextContinuationToken : undefined;
+  } while (continuationToken);
 };
 
-const uploadFileToS3 = async (
-    localPath,
-    key
-) => {
+const uploadCertificateToS3 = async (filePath, key) => {
+  const fileContent = fs.readFileSync(filePath);
 
-    const fileStream =
-        fs.createReadStream(localPath);
+  const command = new PutObjectCommand({
+    Bucket: process.env.AWS_BUCKET,
 
-    const { contentType, cacheControl } =
-        resolveHeaders(localPath);
+    Key: key,
 
-    await s3.send(
+    Body: fileContent,
 
-        new PutObjectCommand({
+    ContentType: 'application/pdf',
+  });
 
-            Bucket:
-                process.env.AWS_BUCKET,
+  await s3.send(command);
 
-            Key:
-                key,
+  fs.unlinkSync(filePath);
 
-            Body:
-                fileStream,
+  return {
+    key,
 
-            ContentType:
-                contentType,
-
-            CacheControl:
-                cacheControl,
-
-        })
-
-    );
-
-    return `${process.env.CLOUDFRONT_URL}/${key}`;
-
-};
-
-const deleteFileFromS3 = async (
-    key
-) => {
-
-    if (!key) return;
-
-    await s3.send(
-
-        new DeleteObjectCommand({
-
-            Bucket:
-                process.env.AWS_BUCKET,
-
-            Key:
-                key,
-
-        })
-
-    );
-
-};
-
-const deleteDirectoryFromS3 = async (
-    prefix
-) => {
-
-    if (!prefix) return;
-
-    let continuationToken;
-
-    do {
-
-        const listed =
-            await s3.send(
-
-                new ListObjectsV2Command({
-
-                    Bucket:
-                        process.env.AWS_BUCKET,
-
-                    Prefix:
-                        prefix,
-
-                    ContinuationToken:
-                        continuationToken,
-
-                })
-
-            );
-
-        if (
-            listed.Contents &&
-            listed.Contents.length > 0
-        ) {
-
-            await s3.send(
-
-                new DeleteObjectsCommand({
-
-                    Bucket:
-                        process.env.AWS_BUCKET,
-
-                    Delete: {
-
-                        Objects:
-                            listed.Contents.map(
-                                ({ Key }) => ({
-                                    Key,
-                                })
-                            ),
-
-                    },
-
-                })
-
-            );
-
-        }
-
-        continuationToken =
-            listed.IsTruncated
-                ? listed.NextContinuationToken
-                : undefined;
-
-    } while (
-        continuationToken
-    );
-
-};
-
-const uploadCertificateToS3 =
-async (
-    filePath,
-    key
-)=>{
-
-    const fileContent =
-        fs.readFileSync(filePath);
-
-    const command =
-        new PutObjectCommand({
-
-            Bucket:process.env.AWS_BUCKET,
-
-            Key:key,
-
-            Body:fileContent,
-
-            ContentType:
-                "application/pdf"
-
-        });
-
-    await s3.send(command);
-
-    fs.unlinkSync(filePath);
-
-    return {
-
-        key,
-
-        url:`${process.env.CLOUDFRONT_URL}/${key}`
-
-    };
-
+    url: `${process.env.CLOUDFRONT_URL}/${key}`,
+  };
 };
 
 module.exports = {
+  uploadFileToS3,
 
-    uploadFileToS3,
+  deleteFileFromS3,
 
-    deleteFileFromS3,
+  deleteDirectoryFromS3,
 
-    deleteDirectoryFromS3,
-
-    uploadCertificateToS3,
-
+  uploadCertificateToS3,
 };

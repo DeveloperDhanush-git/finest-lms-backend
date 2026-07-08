@@ -1,27 +1,16 @@
-const courseService =
-  require("../services/course.service");
+const courseService = require('../services/course.service');
 
-const publicCourseService = require("../services/publicCourse.service")
+const publicCourseService = require('../services/publicCourse.service');
 
-const fs = require("fs-extra");
-const path = require("path");
-const { randomUUID } = require("crypto");
+const fs = require('fs-extra');
+const path = require('path');
+const { randomUUID } = require('crypto');
 
-const {
-  uploadFileToS3,
-} = require("../services/s3.service");
+const { uploadFileToS3 } = require('../services/s3.service');
 
-const createCourse = async (
-  req,
-  res,
-  next
-) => {
+const createCourse = async (req, res, next) => {
   try {
-    const course =
-      await courseService.createCourse(
-        req.user._id,
-        req.body
-      );
+    const course = await courseService.createCourse(req.user._id, req.body);
 
     res.status(201).json({
       success: true,
@@ -32,16 +21,9 @@ const createCourse = async (
   }
 };
 
-const getMyCourses = async (
-  req,
-  res,
-  next
-) => {
+const getMyCourses = async (req, res, next) => {
   try {
-    const courses =
-      await courseService.getMyCourses(
-        req.user._id
-      );
+    const courses = await courseService.getMyCourses(req.user._id);
 
     res.status(200).json({
       success: true,
@@ -52,17 +34,9 @@ const getMyCourses = async (
   }
 };
 
-const getCourseById = async (
-  req,
-  res,
-  next
-) => {
+const getCourseById = async (req, res, next) => {
   try {
-    const course =
-      await courseService.getCourseById(
-        req.params.id,
-        req.user._id
-      );
+    const course = await courseService.getCourseById(req.params.id, req.user._id);
 
     res.status(200).json({
       success: true,
@@ -73,18 +47,9 @@ const getCourseById = async (
   }
 };
 
-const updateCourse = async (
-  req,
-  res,
-  next
-) => {
+const updateCourse = async (req, res, next) => {
   try {
-    const course =
-      await courseService.updateCourse(
-        req.params.id,
-        req.user._id,
-        req.body
-      );
+    const course = await courseService.updateCourse(req.params.id, req.user._id, req.body);
 
     res.status(200).json({
       success: true,
@@ -95,262 +60,138 @@ const updateCourse = async (
   }
 };
 
-const deleteCourse = async (
-  req,
-  res,
-  next
-) => {
+const deleteCourse = async (req, res, next) => {
   try {
-    await courseService.deleteCourse(
-      req.params.id,
-      req.user._id
-    );
+    await courseService.deleteCourse(req.params.id, req.user._id);
 
     res.status(200).json({
       success: true,
-      message:
-        "Course deleted successfully",
+      message: 'Course deleted successfully',
     });
   } catch (error) {
     next(error);
   }
 };
 
-const publishCourse =
-  async (
-    req,
-    res,
-    next
-  ) => {
-
-    try {
-
-      const course =
-        await courseService.publishCourse(
-          req.params.id,
-          req.user._id
-        );
-
-      return res
-        .status(200)
-        .json({
-          success: true,
-          message:
-            "Course published successfully",
-          data: course,
-        });
-
-    } catch (error) {
-      next(error);
-    }
-  };
-
-const unpublishCourse =
-  async (
-    req,
-    res,
-    next
-  ) => {
-
-    try {
-
-      const course =
-        await courseService.unpublishCourse(
-          req.params.id,
-          req.user._id
-        );
-
-      return res
-        .status(200)
-        .json({
-          success: true,
-          message:
-            "Course unpublished successfully",
-          data: course,
-        });
-
-    } catch (error) {
-      next(error);
-    }
-  };
-
-const uploadThumbnail = async (
-  req,
-  res,
-  next
-) => {
-
+const submitCourse = async (req, res, next) => {
   try {
-
-    if (!req.file) {
-
-      throw new Error(
-        "Please upload an image file"
-      );
-
-    }
-
-    const extension =
-      path.extname(
-        req.file.originalname
-      );
-
-    const key =
-      `courses/thumbnails/${req.params.id}/${randomUUID()}${extension}`;
-
-    const thumbnailUrl =
-      await uploadFileToS3(
-
-        req.file.path,
-
-        key
-
-      );
-
-    const course =
-      await courseService.updateThumbnail(
-
-        req.params.id,
-
-        req.user._id,
-
-        thumbnailUrl,
-
-        key
-
-      );
+    const course = await courseService.submitCourse(req.params.id, req.user._id);
 
     return res.status(200).json({
-
       success: true,
-
-      message:
-        "Thumbnail updated successfully",
-
-      data: {
-
-        thumbnail:
-          course.thumbnail,
-
-        thumbnailKey:
-          course.thumbnailKey,
-
-      },
-
+      message: 'Course submitted for review successfully',
+      data: course,
     });
-
-  }
-
-  catch (error) {
-
+  } catch (error) {
     next(error);
-
   }
-
-  finally {
-
-    if (req.file?.path) {
-
-      await fs.remove(
-        req.file.path
-      );
-
-    }
-
-  }
-
 };
 
-const uploadPreviewVideo = async (
-  req,
-  res,
-  next
-) => {
-
+const unpublishCourse = async (req, res, next) => {
   try {
+    const course = await courseService.unpublishCourse(req.params.id, req.user._id);
 
-    if (!req.file) {
-
-      throw new Error(
-        "Please upload a video file"
-      );
-
-    }
-
-    const extension =
-      path.extname(
-        req.file.originalname
-      );
-
-    const key =
-      `courses/previews/${req.params.id}/${randomUUID()}${extension}`;
-
-    const videoUrl =
-      await uploadFileToS3(
-        req.file.path,
-        key
-      );
-
-    const course =
-      await courseService.updatePreviewVideo(
-
-        req.params.id,
-
-        req.user._id,
-
-        {
-          url: videoUrl,
-          key,
-
-          duration: 0,
-
-          size:
-            req.file.size,
-
-          mimeType:
-            req.file.mimetype,
-        }
-
-      );
-
-    return res
-      .status(200)
-      .json({
-
-        success: true,
-
-        message:
-          "Preview video updated successfully",
-
-        data: {
-
-          previewVideo:
-            course.previewVideo,
-
-        },
-
-      });
-
-  }
-
-  catch (error) {
-
+    return res.status(200).json({
+      success: true,
+      message: 'Course unpublished successfully',
+      data: course,
+    });
+  } catch (error) {
     next(error);
-
   }
+};
 
-  finally {
-
-    if (req.file?.path) {
-
-      await fs.remove(
-        req.file.path
-      );
-
+const uploadThumbnail = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      throw new Error('Please upload an image file');
     }
 
-  }
+    const extension = path.extname(req.file.originalname);
 
+    const key = `courses/thumbnails/${req.params.id}/${randomUUID()}${extension}`;
+
+    const thumbnailUrl = await uploadFileToS3(
+      req.file.path,
+
+      key
+    );
+
+    const course = await courseService.updateThumbnail(
+      req.params.id,
+
+      req.user._id,
+
+      thumbnailUrl,
+
+      key
+    );
+
+    return res.status(200).json({
+      success: true,
+
+      message: 'Thumbnail updated successfully',
+
+      data: {
+        thumbnail: course.thumbnail,
+
+        thumbnailKey: course.thumbnailKey,
+      },
+    });
+  } catch (error) {
+    next(error);
+  } finally {
+    if (req.file?.path) {
+      await fs.remove(req.file.path);
+    }
+  }
+};
+
+const uploadPreviewVideo = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      throw new Error('Please upload a video file');
+    }
+
+    const extension = path.extname(req.file.originalname);
+
+    const key = `courses/previews/${req.params.id}/${randomUUID()}${extension}`;
+
+    const videoUrl = await uploadFileToS3(req.file.path, key);
+
+    const course = await courseService.updatePreviewVideo(
+      req.params.id,
+
+      req.user._id,
+
+      {
+        url: videoUrl,
+        key,
+
+        duration: 0,
+
+        size: req.file.size,
+
+        mimeType: req.file.mimetype,
+      }
+    );
+
+    return res.status(200).json({
+      success: true,
+
+      message: 'Preview video updated successfully',
+
+      data: {
+        previewVideo: course.previewVideo,
+      },
+    });
+  } catch (error) {
+    next(error);
+  } finally {
+    if (req.file?.path) {
+      await fs.remove(req.file.path);
+    }
+  }
 };
 
 const removeThumbnail = async (req, res, next) => {
@@ -358,62 +199,35 @@ const removeThumbnail = async (req, res, next) => {
     await courseService.deleteThumbnail(req.params.id, req.user._id);
     res.status(200).json({
       success: true,
-      message: "Thumbnail removed successfully",
+      message: 'Thumbnail removed successfully',
     });
   } catch (error) {
     next(error);
   }
 };
 
-const removePreviewVideo = async (
-  req,
-  res,
-  next
-) => {
-
+const removePreviewVideo = async (req, res, next) => {
   try {
-
-    await courseService.deletePreviewVideo(
-      req.params.id,
-      req.user._id
-    );
+    await courseService.deletePreviewVideo(req.params.id, req.user._id);
 
     return res.status(200).json({
-
       success: true,
 
-      message:
-        "Preview video removed successfully",
-
+      message: 'Preview video removed successfully',
     });
-
-  }
-
-  catch (error) {
-
+  } catch (error) {
     next(error);
-
   }
-
 };
 
-const getSearchSuggestions = async (
-  req,
-  res,
-  next
-) => {
+const getSearchSuggestions = async (req, res, next) => {
   try {
-
-    const suggestions =
-      await publicCourseService.getSearchSuggestions(
-        req.query.q || ""
-      );
+    const suggestions = await publicCourseService.getSearchSuggestions(req.query.q || '');
 
     return res.status(200).json({
       success: true,
       data: suggestions,
     });
-
   } catch (error) {
     next(error);
   }
@@ -425,7 +239,7 @@ module.exports = {
   getCourseById,
   updateCourse,
   deleteCourse,
-  publishCourse,
+  submitCourse,
   unpublishCourse,
   uploadThumbnail,
   removeThumbnail,

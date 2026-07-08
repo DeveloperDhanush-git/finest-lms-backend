@@ -1,24 +1,24 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
 const certificateSchema = new mongoose.Schema(
   {
     studentId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: 'User',
       required: true,
       index: true,
     },
 
     courseId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Course",
+      ref: 'Course',
       required: true,
       index: true,
     },
 
     enrollmentId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Enrollment",
+      ref: 'Enrollment',
       required: true,
     },
 
@@ -67,12 +67,6 @@ const certificateSchema = new mongoose.Schema(
   }
 );
 
-/*
-------------------------------------------
-One Certificate Per Student Per Course
-------------------------------------------
-*/
-
 certificateSchema.index(
   {
     studentId: 1,
@@ -83,7 +77,4 @@ certificateSchema.index(
   }
 );
 
-module.exports = mongoose.model(
-  "Certificate",
-  certificateSchema
-);
+module.exports = mongoose.model('Certificate', certificateSchema);

@@ -1,91 +1,63 @@
-const Course =
-  require("../models/course.model");
+const Course = require('../models/course.model');
 
-const CourseSection =
-  require("../models/section.model");
+const CourseSection = require('../models/section.model');
 
-const CourseLecture =
-  require("../models/lecture.model");
+const CourseLecture = require('../models/lecture.model');
 
-const InstructorProfile =
-  require("../models/instructor.model");
+const InstructorProfile = require('../models/instructor.model');
 
-const createSection = async (
-  userId,
-  courseId,
-  data
-) => {
-
-  const instructor =
-    await InstructorProfile.findOne({
-      userId,
-    });
+const createSection = async (userId, courseId, data) => {
+  const instructor = await InstructorProfile.findOne({
+    userId,
+  });
 
   if (!instructor) {
-    throw new Error(
-      "Instructor profile not found"
-    );
+    throw new Error('Instructor profile not found');
   }
 
-  const course =
-    await Course.findOne({
-      _id: courseId,
-      instructorId:
-        instructor._id,
-      isDeleted: false,
-    });
+  const course = await Course.findOne({
+    _id: courseId,
+    instructorId: instructor._id,
+    isDeleted: false,
+  });
 
   if (!course) {
-    throw new Error(
-      "Course not found"
-    );
+    throw new Error('Course not found');
   }
 
   if (data.order) {
-    const existingSection =
-      await CourseSection.findOne({
-        courseId,
-        order: data.order,
-        isDeleted: false,
-      });
+    const existingSection = await CourseSection.findOne({
+      courseId,
+      order: data.order,
+      isDeleted: false,
+    });
 
     if (existingSection) {
-      throw new Error(
-        "Section with this order already exists"
-      );
+      throw new Error('Section with this order already exists');
     }
   }
 
-  const section =
-    await CourseSection.create({
-      ...data,
-      courseId,
-    });
+  const section = await CourseSection.create({
+    ...data,
+    courseId,
+  });
 
   return section;
 };
 
-const getSections = async (
-  courseId,
-  userId
-) => {
+const getSections = async (courseId, userId) => {
+  const instructor = await InstructorProfile.findOne({
+    userId,
+  });
 
-  const instructor =
-    await InstructorProfile.findOne({
-      userId,
-    });
-
-  const course =
-    await Course.findOne({
-      _id: courseId,
-      instructorId: instructor?._id,
-      isDeleted: false,
-    });
+  const course = await Course.findOne({
+    _id: courseId,
+    instructorId: instructor?._id,
+    isDeleted: false,
+  });
 
   if (!course) {
-    throw new Error(
-      "Course not found or access denied"
-    );
+    throw new Error('Course not found or access denied');
   }
 
   return await CourseSection.find({
@@ -96,138 +68,91 @@ const getSections = async (
   });
 };
 
-const updateSection = async (
-  sectionId,
-  userId,
-  data
-) => {
-
-  const instructor =
-    await InstructorProfile.findOne({
-      userId,
-    });
+const updateSection = async (sectionId, userId, data) => {
+  const instructor = await InstructorProfile.findOne({
+    userId,
+  });
 
   if (!instructor) {
-    throw new Error(
-      "Instructor profile not found"
-    );
+    throw new Error('Instructor profile not found');
   }
 
-  const section =
-    await CourseSection.findById(
-      sectionId
-    );
+  const section = await CourseSection.findById(sectionId);
 
   if (!section) {
-    throw new Error(
-      "Section not found"
-    );
+    throw new Error('Section not found');
   }
 
-  const course =
-    await Course.findOne({
-      _id: section.courseId,
-      instructorId:
-        instructor._id,
-      isDeleted: false,
-    });
+  const course = await Course.findOne({
+    _id: section.courseId,
+    instructorId: instructor._id,
+    isDeleted: false,
+  });
 
   if (!course) {
-    throw new Error(
-      "Unauthorized to update this section"
-    );
+    throw new Error('Unauthorized to update this section');
   }
 
-  if (
-    data.order &&
-    data.order !== section.order
-  ) {
-    const existingSection =
-      await CourseSection.findOne({
-        courseId: section.courseId,
-        order: data.order,
-        isDeleted: false,
-        _id: {
-          $ne: sectionId,
-        },
-      });
+  if (data.order && data.order !== section.order) {
+    const existingSection = await CourseSection.findOne({
+      courseId: section.courseId,
+      order: data.order,
+      isDeleted: false,
+      _id: {
+        $ne: sectionId,
+      },
+    });
 
     if (existingSection) {
-      throw new Error(
-        "Section with this order already exists"
-      );
+      throw new Error('Section with this order already exists');
     }
   }
 
-  const updatedSection =
-    await CourseSection.findByIdAndUpdate(
-      sectionId,
-      data,
-      {
-        returnDocument:
-          "after",
-        runValidators:
-          true,
-      }
-    );
+  const updatedSection = await CourseSection.findByIdAndUpdate(sectionId, data, {
+    returnDocument: 'after',
+    runValidators: true,
+  });
 
   return updatedSection;
 };
 
-const deleteSection = async (
-  sectionId,
-  userId
-) => {
-
-  const instructor =
-    await InstructorProfile.findOne({
-      userId,
-    });
+const deleteSection = async (sectionId, userId) => {
+  const instructor = await InstructorProfile.findOne({
+    userId,
+  });
 
   if (!instructor) {
-    throw new Error(
-      "Instructor profile not found"
-    );
+    throw new Error('Instructor profile not found');
   }
 
-  const section =
-    await CourseSection.findById(
-      sectionId
-    );
+  const section = await CourseSection.findById(sectionId);
 
   if (!section) {
-    throw new Error(
-      "Section not found"
-    );
+    throw new Error('Section not found');
   }
 
-  const course =
-    await Course.findOne({
-      _id: section.courseId,
-      instructorId:
-        instructor._id,
-      isDeleted: false,
-    });
+  const course = await Course.findOne({
+    _id: section.courseId,
+    instructorId: instructor._id,
+    isDeleted: false,
+  });
 
   if (!course) {
-    throw new Error(
-      "Unauthorized to delete this section"
-    );
+    throw new Error('Unauthorized to delete this section');
   }
 
-  const deletedSection =
-    await CourseSection.findOneAndUpdate(
-      {
-        _id: sectionId,
-        isDeleted: false,
-      },
-      {
-        isDeleted: true,
-      },
-      {
-        returnDocument: "after",
-      }
-    );
+  const deletedSection = await CourseSection.findOneAndUpdate(
+    {
+      _id: sectionId,
+      isDeleted: false,
+    },
+    {
+      isDeleted: true,
+    },
+    {
+      returnDocument: 'after',
+    }
+  );
 
   await CourseLecture.updateMany(
     {

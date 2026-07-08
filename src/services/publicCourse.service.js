@@ -1,12 +1,10 @@
-const mongoose = require("mongoose");
-const Course = require("../models/course.model");
-const CourseSection =
-  require("../models/section.model");
+const mongoose = require('mongoose');
+const Course = require('../models/course.model');
+const CourseSection = require('../models/section.model');
 
-const CourseLecture =
-  require("../models/lecture.model");
-const { getSearchSuggestions } = require("./course.service");
-  
+const CourseLecture = require('../models/lecture.model');
+const { getSearchSuggestions } = require('./course.service');
+
 const getPublicCourses = async (query) => {
   const {
     page = 1,
@@ -19,23 +17,23 @@ const getPublicCourses = async (query) => {
     priceType,
     minPrice,
     maxPrice,
-    sort = "relevance",
+    sort = 'relevance',
   } = query;
   const parsedPage = Math.max(1, Number(page) || 1);
   const parsedLimit = Math.min(Math.max(1, Number(limit) || 12), 100);
-  const cleanedSearch = typeof search === "string" ? search.trim() : "";
+  const cleanedSearch = typeof search === 'string' ? search.trim() : '';
   const parsedRating = Number(rating);
   const parsedMinPrice = Number(minPrice);
   const parsedMaxPrice = Number(maxPrice);
 
   const filters = {
-    status: "published",
+    status: 'published',
     isDeleted: false,
   };
 
   if (category) {
     if (!mongoose.Types.ObjectId.isValid(category)) {
-      throw new Error("Invalid category id");
+      throw new Error('Invalid category id');
     }
 
     filters.categoryId = new mongoose.Types.ObjectId(category);
@@ -55,24 +53,17 @@ const getPublicCourses = async (query) => {
     };
   }
 
-  if (priceType === "free") {
-    filters.$or = [
-      { price: 0 },
-      { discountPrice: 0 },
-    ];
+  if (priceType === 'free') {
+    filters.$or = [{ price: 0 }, { discountPrice: 0 }];
   }
 
   const effectivePriceExpression = {
-    $cond: [
-      { $gt: ["$discountPrice", 0] },
-      "$discountPrice",
-      "$price",
-    ],
+    $cond: [{ $gt: ['$discountPrice', 0] }, '$discountPrice', '$price'],
   };
 
   const priceExpressions = [];
 
-  if (priceType === "paid") {
+  if (priceType === 'paid') {
     priceExpressions.push({
       $gt: [effectivePriceExpression, 0],
     });
@@ -101,14 +92,13 @@ const getPublicCourses = async (query) => {
   if (cleanedSearch) {
     basePipeline.push({
       $search: {
-        index: "course-search",
+        index: 'course-search',
         compound: {
-          
           should: [
             {
               phrase: {
                 query: cleanedSearch,
-                path: "title",
+                path: 'title',
                 score: {
                   boost: {
                     value: 20,
@@ -119,7 +109,7 @@ const getPublicCourses = async (query) => {
             {
               autocomplete: {
                 query: cleanedSearch,
-                path: "title",
+                path: 'title',
                 fuzzy: {
                   maxEdits: 1,
                   prefixLength: 2,
@@ -134,7 +124,7 @@ const getPublicCourses = async (query) => {
             {
               autocomplete: {
                 query: cleanedSearch,
-                path: "subtitle",
+                path: 'subtitle',
                 fuzzy: {
                   maxEdits: 1,
                   prefixLength: 2,
@@ -149,7 +139,7 @@ const getPublicCourses = async (query) => {
             {
               text: {
                 query: cleanedSearch,
-                path: "tags",
+                path: 'tags',
                 fuzzy: {
                   maxEdits: 1,
                   prefixLength: 2,
@@ -164,7 +154,7 @@ const getPublicCourses = async (query) => {
             {
               text: {
                 query: cleanedSearch,
-                path: "learningObjectives",
+                path: 'learningObjectives',
                 fuzzy: {
                   maxEdits: 1,
                   prefixLength: 2,
@@ -179,7 +169,7 @@ const getPublicCourses = async (query) => {
             {
               text: {
                 query: cleanedSearch,
-                path: "requirements",
+                path: 'requirements',
                 fuzzy: {
                   maxEdits: 1,
                   prefixLength: 2,
@@ -194,7 +184,7 @@ const getPublicCourses = async (query) => {
             {
               text: {
                 query: cleanedSearch,
-                path: "description",
+                path: 'description',
                 fuzzy: {
                   maxEdits: 1,
                   prefixLength: 2,
@@ -229,39 +219,27 @@ const getPublicCourses = async (query) => {
     resultPipeline.push({
       $addFields: {
         score: {
-          $meta: "searchScore",
+          $meta: 'searchScore',
         },
       },
     });
   }
 
   const sortOptions = (() => {
-    const defaultRelevance = cleanedSearch
-      ? { score: -1, createdAt: -1 }
-      : { createdAt: -1 };
+    const defaultRelevance = cleanedSearch ? { score: -1, createdAt: -1 } : { createdAt: -1 };
 
     switch (sort) {
-      case "newest":
-        return cleanedSearch
-          ? { createdAt: -1, score: -1 }
-          : { createdAt: -1 };
-      case "popular":
-        return cleanedSearch
-          ? { totalEnrollments: -1, score: -1 }
-          : { totalEnrollments: -1 };
-      case "rating":
-        return cleanedSearch
-          ? { averageRating: -1, score: -1 }
-          : { averageRating: -1 };
-      case "price_low":
-        return cleanedSearch
-          ? { effectivePrice: 1, score: -1 }
-          : { effectivePrice: 1 };
-      case "price_high":
-        return cleanedSearch
-          ? { effectivePrice: -1, score: -1 }
-          : { effectivePrice: -1 };
-      case "relevance":
+      case 'newest':
+        return cleanedSearch ? { createdAt: -1, score: -1 } : { createdAt: -1 };
+      case 'popular':
+        return cleanedSearch ? { totalEnrollments: -1, score: -1 } : { totalEnrollments: -1 };
+      case 'rating':
+        return cleanedSearch ? { averageRating: -1, score: -1 } : { averageRating: -1 };
+      case 'price_low':
+        return cleanedSearch ? { effectivePrice: 1, score: -1 } : { effectivePrice: 1 };
+      case 'price_high':
+        return cleanedSearch ? { effectivePrice: -1, score: -1 } : { effectivePrice: -1 };
+      case 'relevance':
       default:
         return defaultRelevance;
     }
@@ -288,7 +266,7 @@ const getPublicCourses = async (query) => {
       effectivePrice: 1,
       ...(cleanedSearch && {
         score: {
-          $meta: "searchScore",
+          $meta: 'searchScore',
         },
       }),
     },
@@ -306,20 +284,20 @@ const getPublicCourses = async (query) => {
 
   await Course.populate(courses, [
     {
-      path: "categoryId",
-      select: "name slug",
+      path: 'categoryId',
+      select: 'name slug',
     },
     {
-      path: "instructorId",
-      select: "headline averageRating totalStudents",
+      path: 'instructorId',
+      select: 'headline averageRating totalStudents',
       populate: {
-        path: "userId",
-        select: "firstName lastName avatar",
+        path: 'userId',
+        select: 'firstName lastName avatar',
       },
     },
   ]);
 
-  const countPipeline = [...basePipeline, { $count: "total" }];
+  const countPipeline = [...basePipeline, { $count: 'total' }];
   const totalResult = await Course.aggregate(countPipeline).allowDiskUse(true);
   const total = totalResult[0]?.total || 0;
 
@@ -334,56 +312,41 @@ const getPublicCourses = async (query) => {
   };
 };
 
-const getPublicCourseById =
-  async (courseId) => {
+const getPublicCourseById = async (courseId) => {
+  const course = await Course.findOne({
+    _id: courseId,
+    status: 'published',
+    isDeleted: false,
+  })
+    .populate('categoryId', 'name slug')
+    .populate({
+      path: 'instructorId',
+      populate: {
+        path: 'userId',
+        select: 'firstName lastName avatar',
+      },
+    });
 
-    const course =
-      await Course.findOne({
-        _id: courseId,
-        status: "published",
-        isDeleted: false,
-      })
-      .populate(
-        "categoryId",
-        "name slug"
-      )
-      .populate({
-        path:
-          "instructorId",
-        populate: {
-          path: "userId",
-          select:
-            "firstName lastName avatar",
-        },
-      });
+  if (!course) {
+    throw new Error('Course not found');
+  }
 
-    if (!course) {
-      throw new Error(
-        "Course not found"
-      );
-    }
+  const sections = await CourseSection.find({
+    courseId,
+    isDeleted: false,
+  });
 
-    const sections =
-      await CourseSection.find({
-        courseId,
-        isDeleted: false,
-      });
+  const lectures = await CourseLecture.find({
+    courseId,
+    isDeleted: false,
+  }).select('title duration isPreview sectionId');
 
-    const lectures =
-      await CourseLecture.find({
-        courseId,
-        isDeleted: false,
-      }).select(
-        "title duration isPreview sectionId"
-      );
-
-    return {
-      course,
-      sections,
-      lectures,
-    };
+  return {
+    course,
+    sections,
+    lectures,
+  };
 };
-
 
 module.exports = {
   getPublicCourses,

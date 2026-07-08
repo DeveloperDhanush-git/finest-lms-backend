@@ -58,13 +58,6 @@
         async function startPayment() {
 
             try {
-
-                /*
-                ------------------------
-                Create Checkout
-                ------------------------
-                */
-
                 const checkoutResponse =
                     await fetch(`${API}/payments/checkout`, {
 
@@ -94,12 +87,6 @@
                     return;
 
                 }
-
-                /*
-                ------------------------
-                Razorpay Popup
-                ------------------------
-                */
 
                 const options = {
 
@@ -153,12 +140,6 @@
                         async function (response) {
 
                             console.log(response);
-
-                            /*
-                            ------------------------
-                            Verify Payment
-                            ------------------------
-                            */
 
                             const verifyResponse =
                                 await fetch(`${API}/payments/verify`, {

@@ -1,86 +1,81 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
-const enrollmentSchema =
-  new mongoose.Schema(
-    {
-      studentId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-        required: true,
-      },
-
-      courseId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Course",
-        required: true,
-      },
-
-      paymentId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Payment",
-        required: true,
-      },
-
-      enrolledAt: {
-        type: Date,
-        default: Date.now,
-      },
-
-      status: {
-        type: String,
-        enum: [
-          "active",
-          "completed",
-          "cancelled",
-        ],
-        default: "active",
-      },
-
-      amountPaid: {
-        type: Number,
-        required: true,
-      },
-
-      progressPercentage: {
-        type: Number,
-        default: 0,
-        min: 0,
-        max: 100,
-      },
-
-      completedLectures: [
-        {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "CourseLecture",
-        },
-      ],
-
-      lastAccessedLecture: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "CourseLecture",
-        default: null,
-      },
-
-      completedAt: {
-        type: Date,
-        default: null,
-      },
-
-      certificateIssued: {
-        type: Boolean,
-        default: false,
-      },
-
-      certificateIssuedAt: {
-        type: Date,
-        default: null,
-      },
+const enrollmentSchema = new mongoose.Schema(
+  {
+    studentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
     },
-    {
-      timestamps: true,
-      versionKey: false,
-    }
-  );
+
+    courseId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Course',
+      required: true,
+    },
+
+    paymentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Payment',
+      required: true,
+    },
+
+    enrolledAt: {
+      type: Date,
+      default: Date.now,
+    },
+
+    status: {
+      type: String,
+      enum: ['active', 'completed', 'cancelled'],
+      default: 'active',
+    },
+
+    amountPaid: {
+      type: Number,
+      required: true,
+    },
+
+    progressPercentage: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100,
+    },
+
+    completedLectures: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'CourseLecture',
+      },
+    ],
+
+    lastAccessedLecture: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'CourseLecture',
+      default: null,
+    },
+
+    completedAt: {
+      type: Date,
+      default: null,
+    },
+
+    certificateIssued: {
+      type: Boolean,
+      default: false,
+    },
+
+    certificateIssuedAt: {
+      type: Date,
+      default: null,
+    },
+  },
+  {
+    timestamps: true,
+    versionKey: false,
+  }
+);
 
 enrollmentSchema.index(
   {
@@ -92,8 +87,4 @@ enrollmentSchema.index(
   }
 );
 
-module.exports =
-  mongoose.model(
-    "Enrollment",
-    enrollmentSchema
-  );
+module.exports = mongoose.model('Enrollment', enrollmentSchema);

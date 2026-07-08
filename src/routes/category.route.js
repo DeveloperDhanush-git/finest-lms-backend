@@ -1,14 +1,10 @@
-const router =
-  require("express").Router();
+const router = require('express').Router();
 
-const authMiddleware =
-  require("../middlewares/auth.middleware");
+const authMiddleware = require('../middlewares/auth.middleware');
 
-const roleMiddleware =
-  require("../middlewares/role.middleware");
+const roleMiddleware = require('../middlewares/role.middleware');
 
-const validate =
-  require("../middlewares/validate.middleware");
+const validate = require('../middlewares/validate.middleware');
 
 const {
   createCategory,
@@ -16,52 +12,30 @@ const {
   getCategory,
   updateCategory,
   deleteCategory,
-} = require(
-  "../controllers/category.controller"
-);
+} = require('../controllers/category.controller');
 
-const {
-  createCategorySchema,
-  updateCategorySchema,
-} = require(
-  "../validation/category.validation"
-);
+const { createCategorySchema, updateCategorySchema } = require('../validations/category.validation');
 
 router.post(
-  "/",
+  '/',
   authMiddleware,
-  roleMiddleware("admin"),
-  validate(
-    createCategorySchema
-  ),
+  roleMiddleware('admin'),
+  validate(createCategorySchema),
   createCategory
 );
 
-router.get(
-  "/",
-  getCategories
-);
+router.get('/', getCategories);
 
-router.get(
-  "/:id",
-  getCategory
-);
+router.get('/:id', getCategory);
 
 router.patch(
-  "/:id",
+  '/:id',
   authMiddleware,
-  roleMiddleware("admin"),
-  validate(
-    updateCategorySchema
-  ),
+  roleMiddleware('admin'),
+  validate(updateCategorySchema),
   updateCategory
 );
 
-router.delete(
-  "/:id",
-  authMiddleware,
-  roleMiddleware("admin"),
-  deleteCategory
-);
+router.delete('/:id', authMiddleware, roleMiddleware('admin'), deleteCategory);
 
 module.exports = router;

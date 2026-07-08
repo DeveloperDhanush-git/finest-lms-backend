@@ -1,10 +1,10 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
 const paymentSchema = new mongoose.Schema(
   {
     studentId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: 'User',
       required: true,
       index: true,
     },
@@ -13,7 +13,7 @@ const paymentSchema = new mongoose.Schema(
       {
         courseId: {
           type: mongoose.Schema.Types.ObjectId,
-          ref: "Course",
+          ref: 'Course',
           required: true,
         },
 
@@ -36,18 +36,13 @@ const paymentSchema = new mongoose.Schema(
 
     currency: {
       type: String,
-      default: "INR",
+      default: 'INR',
     },
 
     status: {
       type: String,
-      enum: [
-        "created",
-        "paid",
-        "failed",
-        "refunded",
-      ],
-      default: "created",
+      enum: ['created', 'paid', 'failed', 'refunded'],
+      default: 'created',
     },
 
     razorpayOrderId: {
@@ -91,7 +86,4 @@ paymentSchema.index({
   razorpayPaymentId: 1,
 });
 
-module.exports = mongoose.model(
-  "Payment",
-  paymentSchema
-);
+module.exports = mongoose.model('Payment', paymentSchema);

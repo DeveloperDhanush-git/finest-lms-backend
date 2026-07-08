@@ -24,10 +24,7 @@ const userSchema = new mongoose.Schema(
       unique: true,
       lowercase: true,
       trim: true,
-      match: [
-        /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-        "Please enter a valid email",
-      ],
+      match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, "Please enter a valid email"],
     },
 
     passwordHash: {
@@ -42,14 +39,14 @@ const userSchema = new mongoose.Schema(
       default: "student",
     },
     avatar: {
-  type: String,
-  default: null,
-},
+      type: String,
+      default: null,
+    },
 
-avatarKey: {
-  type: String,
-  default: null,
-},
+    avatarKey: {
+      type: String,
+      default: null,
+    },
 
     phone: {
       type: String,
@@ -74,12 +71,7 @@ avatarKey: {
 
     accountStatus: {
       type: String,
-      enum: [
-        "active",
-        "suspended",
-        "blocked",
-        "deleted",
-      ],
+      enum: ["active", "suspended", "blocked", "deleted"],
       default: "active",
     },
 
@@ -127,7 +119,7 @@ avatarKey: {
     toObject: {
       virtuals: true,
     },
-  }
+  },
 );
 
 userSchema.index({ role: 1 });
@@ -141,19 +133,15 @@ userSchema.virtual("fullName").get(function () {
 });
 
 userSchema.methods.isLocked = function () {
-  return !!(
-    this.lockUntil &&
-    this.lockUntil > Date.now()
-  );
+  return !!(this.lockUntil && this.lockUntil > Date.now());
 };
 
-userSchema.statics.findActiveUserByEmail =
-  function (email) {
-    return this.findOne({
-      email,
-      accountStatus: "active",
-    }).select('+passwordHash');
-  };
+userSchema.statics.findActiveUserByEmail = function (email) {
+  return this.findOne({
+    email,
+    accountStatus: "active",
+  }).select("+passwordHash");
+};
 
 userSchema.methods.toJSON = function () {
   const obj = this.toObject();

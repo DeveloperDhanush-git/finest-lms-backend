@@ -1,16 +1,16 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
 const lectureSchema = new mongoose.Schema(
   {
     courseId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Course",
+      ref: 'Course',
       required: true,
     },
 
     sectionId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "CourseSection",
+      ref: 'CourseSection',
       required: true,
     },
 
@@ -36,7 +36,6 @@ const lectureSchema = new mongoose.Schema(
         default: null,
       },
 
-      // Folder inside S3
       s3Prefix: {
         type: String,
         default: null,
@@ -49,13 +48,8 @@ const lectureSchema = new mongoose.Schema(
 
       processingStatus: {
         type: String,
-        enum: [
-          "pending",
-          "processing",
-          "completed",
-          "failed",
-        ],
-        default: "pending",
+        enum: ['pending', 'processing', 'completed', 'failed'],
+        default: 'pending',
       },
 
       processingError: {
@@ -139,7 +133,4 @@ const lectureSchema = new mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model(
-  "CourseLecture",
-  lectureSchema
-);
+module.exports = mongoose.model('CourseLecture', lectureSchema);

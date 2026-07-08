@@ -39,7 +39,7 @@ const updateProfile = async (userId, updateData) => {
     {
       returnDocument: "after",
       runValidators: true,
-    }
+    },
   );
 
   if (!profile) {
@@ -64,23 +64,18 @@ const becomeInstructor = async (userId, profileData) => {
     throw new Error("Account is not active");
   }
 
-  // 1. Create Instructor Profile
   const profile = await createProfile(userId, profileData);
 
-  // 2. Update User Role
   user.role = "instructor";
   user.refreshTokenVersion += 1;
   await user.save();
 
-  // 3. Revoke Old Refresh Tokens
   await RefreshToken.updateMany({ userId: user._id }, { isRevoked: true });
 
-  // 4. Generate New Tokens
   const payload = { id: user._id, role: user.role };
   const accessToken = generateAccessToken(payload);
   const refreshToken = generateRefreshToken(payload);
 
-  // 5. Persist New Refresh Token
   await RefreshToken.create({
     userId: user._id,
     token: refreshToken,

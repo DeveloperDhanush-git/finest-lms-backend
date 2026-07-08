@@ -1,4 +1,4 @@
-const { z } = require("zod");
+const { z } = require('zod');
 
 const createCourseSchema = z.object({
   categoryId: z.string(),
@@ -11,12 +11,7 @@ const createCourseSchema = z.object({
 
   language: z.string().optional(),
 
-  level: z.enum([
-    "beginner",
-    "intermediate",
-    "advanced",
-    "all_levels",
-  ]),
+  level: z.enum(['beginner', 'intermediate', 'advanced', 'all_levels']),
 
   price: z.number().min(0),
 
@@ -37,11 +32,9 @@ const createCourseSchema = z.object({
   previewVideo: z.string().optional(),
 
   previewVideoPublicId: z.string().optional(),
-
 });
 
-const updateCourseSchema =
-  createCourseSchema.partial();
+const updateCourseSchema = createCourseSchema.partial();
 
 module.exports = {
   createCourseSchema,

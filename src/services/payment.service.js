@@ -1,632 +1,340 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
-const crypto =
-    require("crypto");
+const crypto = require('crypto');
 
-const Enrollment =
-    require("../models/enrollment.model");
+const Enrollment = require('../models/enrollment.model');
 
-const razorpay = require("../config/razorpay");
+const razorpay = require('../config/razorpay');
 
-const Cart = require("../models/cart.model");
-const Payment = require("../models/payment.model");
+const Cart = require('../models/cart.model');
+const Payment = require('../models/payment.model');
 
-const createCheckout = async (
-    userId
-) => {
+const createCheckout = async (userId) => {
 
-    /*
-    -----------------------------
-    Fetch Cart
-    -----------------------------
-    */
+  const cart = await Cart.findOne({
+    studentId: userId,
+  }).populate('items.courseId', 'title price discountPrice status isDeleted');
 
-    const cart =
-        await Cart.findOne({
-            studentId: userId,
-        }).populate(
-            "items.courseId",
-            "title price discountPrice status isDeleted"
-        );
+  if (!cart || cart.items.length === 0) {
+    throw new Error('Cart is empty.');
+  }
 
-    if (
-        !cart ||
-        cart.items.length === 0
-    ) {
+  let amount = 0;
 
-        throw new Error(
-            "Cart is empty."
-        );
+  const purchasedCourses = [];
 
+  for (const item of cart.items) {
+    const course = item.courseId;
+
+    if (!course || course.isDeleted || course.status !== 'published') {
+      throw new Error('One or more courses are unavailable.');
     }
 
-    /*
-    -----------------------------
-    Validate Courses
-    -----------------------------
-    */
+    const alreadyEnrolled = await Enrollment.findOne({
+      studentId: userId,
 
-    let amount = 0;
+      courseId: course._id,
 
-    const purchasedCourses = [];
+      status: { $in: ['active', 'completed'] },
+    });
 
-    for (const item of cart.items) {
-
-        const course = item.courseId;
-
-        /*
-        ---------------------------------
-        Course Validation
-        ---------------------------------
-        */
-
-        if (
-            !course ||
-            course.isDeleted ||
-            course.status !== "published"
-        ) {
-
-            throw new Error(
-                "One or more courses are unavailable."
-            );
-
-        }
-
-        /*
-        ---------------------------------
-        Already Purchased?
-        ---------------------------------
-        */
-
-        const alreadyEnrolled =
-            await Enrollment.findOne({
-
-                studentId: userId,
-
-                courseId: course._id,
-
-                status: "active",
-
-            });
-
-        if (alreadyEnrolled) {
-
-            throw new Error(
-                `You already own "${course.title}".`
-            );
-
-        }
-
-        /*
-        ---------------------------------
-        Amount
-        ---------------------------------
-        */
-
-        /*
-    ---------------------------------
-    Always Use Latest Course Price
-    ---------------------------------
-    */
-
-        const latestPrice =
-
-            course.discountPrice > 0
-                ? course.discountPrice
-                : course.price;
-
-        amount += latestPrice;
-
-        purchasedCourses.push({
-
-            courseId:
-                course._id,
-
-            title:
-                course.title,
-
-            price:
-                latestPrice,
-
-        });
-
+    if (alreadyEnrolled) {
+      throw new Error(`You already own "${course.title}".`);
     }
 
-    /*
-    -----------------------------
-    Razorpay Order
-    -----------------------------
-    */
+    const latestPrice = course.discountPrice > 0 ? course.discountPrice : course.price;
 
-    const razorpayOrder =
-        await razorpay.orders.create({
+    amount += latestPrice;
 
-            amount:
-                amount * 100,
+    purchasedCourses.push({
+      courseId: course._id,
 
-            currency:
-                "INR",
+      title: course.title,
 
-            receipt:
-                crypto.randomUUID(),
+      price: latestPrice,
+    });
+  }
 
-        });
+  const razorpayOrder = await razorpay.orders.create({
+    amount: amount * 100,
 
-    /*
-    -----------------------------
-    Save Payment
-    -----------------------------
-    */
+    currency: 'INR',
 
-    const payment =
-        await Payment.create({
+    receipt: crypto.randomUUID(),
+  });
 
-            studentId:
-                userId,
+  const payment = await Payment.create({
+    studentId: userId,
 
-            courses:
-                purchasedCourses,
+    courses: purchasedCourses,
 
-            amount,
+    amount,
 
-            currency:
-                "INR",
+    currency: 'INR',
 
-            razorpayOrderId:
-                razorpayOrder.id,
+    razorpayOrderId: razorpayOrder.id,
+  });
 
-        });
-
-    /*
-    -----------------------------
-    Response
-    -----------------------------
-    */
-
-    return {
-
-        payment,
-
-        razorpayOrder,
-
-    };
-
-};
-const completePayment = async (
+  return {
     payment,
-    paymentId,
-    signature
-) => {
 
-    const session =
-        await mongoose.startSession();
+    razorpayOrder,
+  };
+};
+const completePayment = async (payment, paymentId, signature) => {
+  const session = await mongoose.startSession();
 
-    try {
+  try {
+    session.startTransaction();
 
-        session.startTransaction();
+    payment.status = 'paid';
+    payment.razorpayPaymentId = paymentId;
+    payment.razorpaySignature = signature;
+    payment.paidAt = new Date();
 
-        payment.status = "paid";
-        payment.razorpayPaymentId = paymentId;
-        payment.razorpaySignature = signature;
-        payment.paidAt = new Date();
+    await payment.save({
+      session,
+    });
 
-        await payment.save({
+    for (const course of payment.courses) {
+      const exists = await Enrollment.findOne({
+        studentId: payment.studentId,
+
+        courseId: course.courseId,
+
+        status: { $in: ['active', 'completed'] },
+      }).session(session);
+
+      if (!exists) {
+        await Enrollment.create(
+          [
+            {
+              studentId: payment.studentId,
+
+              courseId: course.courseId,
+
+              paymentId: payment._id,
+
+              amountPaid: course.price,
+
+              status: 'active',
+            },
+          ],
+          {
             session,
-        });
-
-        for (const course of payment.courses) {
-
-            const exists =
-                await Enrollment.findOne({
-
-                    studentId:
-                        payment.studentId,
-
-                    courseId:
-                        course.courseId,
-
-                    status:
-                        "active",
-
-                }).session(session);
-
-            if (!exists) {
-
-                await Enrollment.create(
-                    [
-                        {
-                            studentId:
-                                payment.studentId,
-
-                            courseId:
-                                course.courseId,
-
-                            paymentId:
-                                payment._id,
-
-                            amountPaid:
-                                course.price,
-
-                            status:
-                                "active",
-                        },
-                    ],
-                    {
-                        session,
-                    }
-                );
-
-            }
-
-        }
-
-        await Cart.findOneAndUpdate(
-            {
-                studentId:
-                    payment.studentId,
-            },
-            {
-                items: [],
-                totalItems: 0,
-                totalAmount: 0,
-            },
-            {
-                session,
-            }
+          }
         );
-
-        await session.commitTransaction();
-
+      }
     }
 
-    catch (error) {
-
-        await session.abortTransaction();
-
-        throw error;
-
-    }
-
-    finally {
-
-        await session.endSession();
-
-    }
-
-    await payment.populate(
-        "courses.courseId",
-        "title thumbnail"
+    await Cart.findOneAndUpdate(
+      {
+        studentId: payment.studentId,
+      },
+      {
+        items: [],
+        totalItems: 0,
+        totalAmount: 0,
+      },
+      {
+        session,
+      }
     );
 
-    return payment;
+    await session.commitTransaction();
+  } catch (error) {
+    await session.abortTransaction();
 
+    throw error;
+  } finally {
+    await session.endSession();
+  }
+
+  await payment.populate('courses.courseId', 'title thumbnail');
+
+  return payment;
 };
 
 const verifyPayment = async (
+  userId,
 
-    userId,
-
-    paymentData
-
+  paymentData
 ) => {
+  const {
+    razorpay_order_id,
 
-    const {
+    razorpay_payment_id,
 
-        razorpay_order_id,
+    razorpay_signature,
+  } = paymentData;
 
-        razorpay_payment_id,
+  const payment = await Payment.findOne({
+    studentId: userId,
 
-        razorpay_signature,
+    razorpayOrderId: razorpay_order_id,
+  });
 
-    } = paymentData;
+  if (!payment) {
+    throw new Error('Payment not found.');
+  }
 
-    /*
-    -----------------------------
-    Find Payment
-    -----------------------------
-    */
+  if (payment.status === 'paid') {
+    return payment;
+  }
 
-    const payment =
-        await Payment.findOne({
+  const expectedSignature = crypto
+    .createHmac(
+      'sha256',
 
-            studentId:
-                userId,
+      process.env.RAZORPAY_KEY_SECRET
+    )
 
-            razorpayOrderId:
-                razorpay_order_id,
+    .update(`${razorpay_order_id}|${razorpay_payment_id}`)
 
-        });
+    .digest('hex');
 
-    if (!payment) {
+  if (expectedSignature !== razorpay_signature) {
+    payment.status = 'failed';
 
-        throw new Error(
-            "Payment not found."
-        );
+    payment.failureReason = 'Invalid Signature';
 
-    }
+    await payment.save();
 
-    /*
-    -----------------------------
-    Already Paid?
-    -----------------------------
-    */
+    throw new Error('Payment verification failed.');
+  }
 
-    if (
-        payment.status ===
-        "paid"
-    ) {
-
-        return payment;
-
-    }
-
-    /*
-    -----------------------------
-    Verify Signature
-    -----------------------------
-    */
-
-    const expectedSignature =
-        crypto
-            .createHmac(
-
-                "sha256",
-
-                process.env
-                    .RAZORPAY_KEY_SECRET
-
-            )
-
-            .update(
-                `${razorpay_order_id}|${razorpay_payment_id}`
-            )
-
-            .digest("hex");
-
-    if (
-        expectedSignature !==
-        razorpay_signature
-    ) {
-
-        payment.status =
-            "failed";
-
-        payment.failureReason =
-            "Invalid Signature";
-
-        await payment.save();
-
-        throw new Error(
-            "Payment verification failed."
-        );
-
-    }
-
-    return await completePayment(
-        payment,
-        razorpay_payment_id,
-        razorpay_signature
-    );
-
+  return await completePayment(payment, razorpay_payment_id, razorpay_signature);
 };
 
-const getPaymentHistory = async (
-    userId
-) => {
+const getPaymentHistory = async (userId) => {
+  return await Payment.find({
+    studentId: userId,
+  })
 
-    return await Payment.find({
+    .populate({
+      path: 'courses.courseId',
 
-        studentId: userId,
+      select: 'title thumbnail instructorId',
 
+      populate: {
+        path: 'instructorId',
+
+        select: 'displayName',
+      },
     })
 
-        .populate({
-
-            path: "courses.courseId",
-
-            select:
-                "title thumbnail instructorId",
-
-            populate: {
-
-                path: "instructorId",
-
-                select:
-                    "displayName",
-
-            },
-
-        })
-
-        .sort({
-
-            createdAt: -1,
-
-        });
-
+    .sort({
+      createdAt: -1,
+    });
 };
 
 const getPaymentById = async (
+  paymentId,
 
-    paymentId,
-
-    userId
-
+  userId
 ) => {
+  const payment = await Payment.findOne({
+    _id: paymentId,
 
-    const payment =
-        await Payment.findOne({
+    studentId: userId,
+  })
 
-            _id: paymentId,
+    .populate({
+      path: 'courses.courseId',
 
-            studentId: userId,
+      select: 'title thumbnail instructorId',
 
-        })
+      populate: {
+        path: 'instructorId',
 
-            .populate({
+        select: 'displayName',
+      },
+    });
 
-                path: "courses.courseId",
+  if (!payment) {
+    throw new Error('Payment not found.');
+  }
 
-                select:
-                    "title thumbnail instructorId",
-
-                populate: {
-
-                    path:
-                        "instructorId",
-
-                    select:
-                        "displayName",
-
-                },
-
-            });
-
-    if (!payment) {
-
-        throw new Error(
-            "Payment not found."
-        );
-
-    }
-
-    return {
-        id: payment._id,
-        amount: payment.amount,
-        currency: payment.currency,
-        status: payment.status,
-        paidAt: payment.paidAt,
-        orderId: payment.razorpayOrderId,
-        paymentId: payment.razorpayPaymentId,
-        courses: payment.courses,
-    };
-
+  return {
+    id: payment._id,
+    amount: payment.amount,
+    currency: payment.currency,
+    status: payment.status,
+    paidAt: payment.paidAt,
+    orderId: payment.razorpayOrderId,
+    paymentId: payment.razorpayPaymentId,
+    courses: payment.courses,
+  };
 };
 
-const handleWebhook = async (
-    headers,
-    body
-) => {
+const handleWebhook = async (headers, body) => {
+  const signature = headers['x-razorpay-signature'];
 
-    const signature =
-        headers["x-razorpay-signature"];
+  const expected = crypto
+    .createHmac('sha256', process.env.RAZORPAY_WEBHOOK_SECRET)
+    .update(body)
+    .digest('hex');
 
-    const expected =
-        crypto
-            .createHmac(
-                "sha256",
-                process.env.RAZORPAY_WEBHOOK_SECRET
-            )
-            .update(body)
-            .digest("hex");
+  if (signature !== expected) {
+    throw new Error('Invalid webhook signature.');
+  }
 
-    if (signature !== expected) {
+  const payload = JSON.parse(body);
 
-        throw new Error(
-            "Invalid webhook signature."
-        );
+  switch (payload.event) {
+    case 'payment.captured': {
+      const entity = payload.payload.payment.entity;
 
+      const payment = await Payment.findOne({
+        razorpayOrderId: entity.order_id,
+      });
+
+      if (!payment) {
+        return;
+      }
+
+      if (payment.status === 'paid') {
+        return;
+      }
+
+      await completePayment(
+        payment,
+
+        entity.id,
+
+        signature
+      );
+
+      break;
     }
 
-    const payload =
-        JSON.parse(body);
+    case 'payment.failed': {
+      const entity = payload.payload.payment.entity;
 
-    switch (payload.event) {
+      await Payment.findOneAndUpdate(
+        {
+          razorpayOrderId: entity.order_id,
+        },
 
-        case "payment.captured": {
+        {
+          status: 'failed',
 
-            const entity =
-                payload.payload.payment.entity;
-
-            const payment =
-                await Payment.findOne({
-
-                    razorpayOrderId:
-                        entity.order_id,
-
-                });
-
-            if (!payment) {
-
-                return;
-
-            }
-
-            if (
-                payment.status ===
-                "paid"
-            ) {
-
-                return;
-
-            }
-
-            await completePayment(
-
-                payment,
-
-                entity.id,
-
-                signature
-
-            );
-
-            break;
-
+          failureReason: entity.error_description || 'Payment Failed',
         }
+      );
 
-        case "payment.failed": {
-
-            const entity =
-                payload.payload.payment.entity;
-
-            await Payment.findOneAndUpdate(
-
-                {
-
-                    razorpayOrderId:
-                        entity.order_id,
-
-                },
-
-                {
-
-                    status:
-                        "failed",
-
-                    failureReason:
-                        entity.error_description ||
-                        "Payment Failed",
-
-                }
-
-            );
-
-            break;
-
-        }
-
-        default:
-
-            console.log(
-                "Webhook:",
-                payload.event
-            );
-
+      break;
     }
 
+    default:
+      console.log('Webhook:', payload.event);
+  }
 };
 
 module.exports = {
-
-    createCheckout,
-
-    verifyPayment,
-
-    getPaymentHistory,
-
-    getPaymentById,
-
-    handleWebhook,
-
+  createCheckout,
+  verifyPayment,
+  getPaymentHistory,
+  getPaymentById,
+  handleWebhook,
 };

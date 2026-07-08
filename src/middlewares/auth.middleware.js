@@ -1,54 +1,38 @@
-const User = require('../models/user.model')
+const User = require("../models/user.model");
+const { verifyAccessToken } = require("../utils/jwt");
+const { UnauthorizedError } = require("../errors");
 
-const {
-  verifyAccessToken,
-} = require("../utils/jwt");
-
-const authMiddleware = async (
-  req,
-  res,
-  next
-) => {
+const authMiddleware = async (req, res, next) => {
   try {
-    const authHeader =
-      req.headers.authorization;
+    const authHeader = req.headers.authorization;
 
-    if (
-      !authHeader ||
-      !authHeader.startsWith("Bearer ")
-    ) {
-      return res.status(401).json({
-        message: "Unauthorized",
-      });
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      throw new UnauthorizedError("Unauthorized access: Bearer token is missing");
     }
 
-    const token =
-      authHeader.split(" ")[1];
+    const token = authHeader.split(" ")[1];
+    let decoded;
+    try {
+      decoded = verifyAccessToken(token);
+    } catch (err) {
+      throw new UnauthorizedError("Invalid or expired access token", "INVALID_TOKEN");
+    }
 
-    const decoded =
-      verifyAccessToken(token);
-
-    const user =
-      await User.findOne({
-        _id: decoded.id,
-        accountStatus: "active",
-      }).select(
-        "_id firstName lastName email role avatar phone countryCode accountStatus"
-      );
+    const user = await User.findOne({
+      _id: decoded.id,
+      accountStatus: "active",
+    }).select(
+      "_id firstName lastName email role avatar phone countryCode accountStatus",
+    );
 
     if (!user) {
-      return res.status(401).json({
-        message: "User not found",
-      });
+      throw new UnauthorizedError("User session found but user is inactive or not found", "USER_INACTIVE");
     }
 
     req.user = user;
-
     next();
   } catch (error) {
-    return res.status(401).json({
-      message: "Invalid token",
-    });
+    next(error);
   }
 };
 

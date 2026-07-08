@@ -1,34 +1,28 @@
-const videoQueue =
-  require("../queues/video.queue");
+const videoQueue = require('../queues/video.queue');
 
-const addVideoJob =
-  async ({
-    lectureId,
-    videoPath,
-  }) => {
+const addVideoJob = async ({ lectureId, videoPath }) => {
+  return await videoQueue.add(
+    'process-video',
 
-    return await videoQueue.add(
-      "process-video",
+    {
+      lectureId,
+      videoPath,
+    },
 
-      {
-        lectureId,
-        videoPath,
+    {
+      removeOnComplete: 100,
+
+      removeOnFail: 500,
+
+      attempts: 3,
+
+      backoff: {
+        type: 'exponential',
+        delay: 5000,
       },
-
-      {
-        removeOnComplete: 100,
-
-        removeOnFail: 500,
-
-        attempts: 3,
-
-        backoff: {
-          type: "exponential",
-          delay: 5000,
-        },
-      }
-    );
-  };
+    }
+  );
+};
 
 module.exports = {
   addVideoJob,

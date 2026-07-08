@@ -1,16 +1,16 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
 const courseSchema = new mongoose.Schema(
   {
     instructorId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "InstructorProfile",
+      ref: 'InstructorProfile',
       required: true,
     },
 
     categoryId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Category",
+      ref: 'Category',
       required: true,
     },
 
@@ -27,59 +27,54 @@ const courseSchema = new mongoose.Schema(
     },
 
     description: {
-  type: String,
-  required: true,
-},
+      type: String,
+      required: true,
+    },
 
-thumbnail: {
-  type: String,
-  default: null,
-},
-
-thumbnailKey: {
-  type: String,
-  default: null,
-},
-
-previewVideo: {
-  type: {
-    url: {
+    thumbnail: {
       type: String,
       default: null,
     },
-    key: {
+
+    thumbnailKey: {
       type: String,
       default: null,
     },
-    duration: {
-      type: Number,
-      default: 0,
-    },
-    size: {
-      type: Number,
-      default: 0,
-    },
-    mimeType: {
-      type: String,
+
+    previewVideo: {
+      type: {
+        url: {
+          type: String,
+          default: null,
+        },
+        key: {
+          type: String,
+          default: null,
+        },
+        duration: {
+          type: Number,
+          default: 0,
+        },
+        size: {
+          type: Number,
+          default: 0,
+        },
+        mimeType: {
+          type: String,
+          default: null,
+        },
+      },
       default: null,
     },
-  },
-  default: null,
-},
     language: {
       type: String,
-      default: "English",
+      default: 'English',
     },
 
     level: {
       type: String,
-      enum: [
-        "beginner",
-        "intermediate",
-        "advanced",
-        "all_levels",
-      ],
-      default: "all_levels",
+      enum: ['beginner', 'intermediate', 'advanced', 'all_levels'],
+      default: 'all_levels',
     },
 
     price: {
@@ -139,14 +134,35 @@ previewVideo: {
 
     status: {
       type: String,
-      enum: [
-        "draft",
-        "pending_review",
-        "published",
-        "rejected",
-        "archived",
-      ],
-      default: "draft",
+      enum: ['draft', 'pending', 'published', 'rejected'],
+      default: 'draft',
+    },
+
+    approvedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+
+    approvedAt: {
+      type: Date,
+      default: null,
+    },
+
+    rejectedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+
+    rejectedAt: {
+      type: Date,
+      default: null,
+    },
+
+    rejectionReason: {
+      type: String,
+      default: null,
     },
 
     isDeleted: {
@@ -165,7 +181,4 @@ previewVideo: {
   }
 );
 
-module.exports = mongoose.model(
-  "Course",
-  courseSchema
-);
+module.exports = mongoose.model('Course', courseSchema);

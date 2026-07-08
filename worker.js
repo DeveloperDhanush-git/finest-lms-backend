@@ -1,16 +1,11 @@
-require("dotenv").config();
+require('dotenv').config();
 
-const connectDB =
-  require("./src/config/database");
+const connectDB = require('./src/config/database');
 
 (async () => {
-
   await connectDB();
 
-  console.log(
-    "✅ MongoDB Connected"
-  );
+  console.log('MongoDB Connected');
 
-  require("./src/workers/video.worker");
-
+  require('./src/workers/video.worker');
 })();

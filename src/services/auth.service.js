@@ -1,22 +1,31 @@
 const crypto = require("crypto");
 const { sendEmail } = require("./email.service");
-const bcrypt = require('bcryptjs');
+const User = require("../models/user.model");
+const RefreshToken = require("../models/refreshToken.model");
 
-const User = require('../models/user.model');
-const RefreshToken = require('../models/refreshToken.model');
+const {
+  generateAccessToken,
+  generateRefreshToken,
+  verifyRefreshToken,
+} = require("../utils/jwt");
 
-const { generateAccessToken, generateRefreshToken, verifyRefreshToken } = require('../utils/jwt');
+const {
+  ConflictError,
+  UnauthorizedError,
+  BadRequestError,
+} = require("../errors");
+
+const { passwordHelper } = require("../helpers");
 
 const registerUser = async (userData) => {
   const { email, password, firstName, lastName } = userData;
 
   const existingUser = await User.findOne({ email });
   if (existingUser) {
-    throw new Error('User already exists');
+    throw new ConflictError("User already exists with this email key", "USER_EXISTS");
   }
 
-  const saltRounds = 12;
-  const passwordHash = await bcrypt.hash(password, saltRounds);
+  const passwordHash = await passwordHelper.hashPassword(password);
 
   const newUser = new User({ firstName, lastName, email, passwordHash });
   await newUser.save();
@@ -28,12 +37,12 @@ const loginUser = async (email, password) => {
   const user = await User.findActiveUserByEmail(email);
 
   if (!user) {
-    throw new Error('Invalid email or password');
+    throw new UnauthorizedError("Invalid email or password", "INVALID_CREDENTIALS");
   }
 
-  const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+  const isPasswordValid = await passwordHelper.comparePassword(password, user.passwordHash);
   if (!isPasswordValid) {
-    throw new Error('Invalid email or password');
+    throw new UnauthorizedError("Invalid email or password", "INVALID_CREDENTIALS");
   }
 
   const payload = { id: user._id, role: user.role };
@@ -41,7 +50,6 @@ const loginUser = async (email, password) => {
   const accessToken = generateAccessToken(payload);
   const refreshToken = generateRefreshToken(payload);
 
-  // Persist refresh token in DB (expires in 7 days)
   await RefreshToken.create({
     userId: user._id,
     token: refreshToken,
@@ -55,16 +63,15 @@ const refreshUserToken = async (refreshToken) => {
   const storedToken = await RefreshToken.findOne({
     token: refreshToken,
     isRevoked: false,
-    expiresAt: { $gt: new Date() }
+    expiresAt: { $gt: new Date() },
   });
 
   if (!storedToken) {
-    throw new Error('Invalid or expired refresh token');
+    throw new UnauthorizedError("Invalid or expired refresh token", "INVALID_REFRESH_TOKEN");
   }
 
   const decoded = verifyRefreshToken(refreshToken);
 
-  // Refresh Token Rotation: Revoke current token
   storedToken.isRevoked = true;
   await storedToken.save();
 
@@ -72,7 +79,6 @@ const refreshUserToken = async (refreshToken) => {
   const accessToken = generateAccessToken(payload);
   const newRefreshToken = generateRefreshToken(payload);
 
-  // Persist new refresh token
   await RefreshToken.create({
     userId: decoded.id,
     token: newRefreshToken,
@@ -86,7 +92,7 @@ const logoutUser = async (refreshToken) => {
   const storedToken = await RefreshToken.findOne({ token: refreshToken });
 
   if (!storedToken) {
-    throw new Error('Invalid refresh token');
+    throw new BadRequestError("Invalid or missing refresh token", "INVALID_REFRESH_TOKEN");
   }
 
   storedToken.isRevoked = true;
@@ -94,26 +100,24 @@ const logoutUser = async (refreshToken) => {
 };
 
 const forgotPassword = async (email) => {
-  const user =
-    await User.findOne({
-      email,
-      accountStatus: "active",
-    });
+  const user = await User.findOne({
+    email,
+    accountStatus: "active",
+  });
   if (!user) {
     return;
   }
   const resetToken = crypto.randomBytes(32).toString("hex");
 
-  // Hash token and save to DB
   user.resetPasswordToken = crypto
-    .createHash('sha256')
+    .createHash("sha256")
     .update(resetToken)
-    .digest('hex');
+    .digest("hex");
 
-  user.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+  user.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000);
   await user.save();
 
-  const resetLink = `${process.env.CLIENT_URL}/api/auth/reset-password/${resetToken}`;
+  const resetLink = `${process.env.CLIENT_URL || 'http://localhost:3000'}/api/auth/reset-password/${resetToken}`;
 
   const html = `
     <h2>Reset Password</h2>
@@ -121,18 +125,11 @@ const forgotPassword = async (email) => {
     <a href="${resetLink}">Reset Password</a>
   `;
 
-  await sendEmail(
-    user.email,
-    "Reset Password",
-    html
-  );
+  await sendEmail(user.email, "Reset Password", html);
 };
 
 const resetPassword = async (token, password) => {
-  const hashedToken = crypto
-    .createHash('sha256')
-    .update(token)
-    .digest('hex');
+  const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
   const user = await User.findOne({
     resetPasswordToken: hashedToken,
@@ -140,18 +137,15 @@ const resetPassword = async (token, password) => {
   }).select("+passwordHash");
 
   if (!user) {
-    throw new Error("Invalid or expired token");
+    throw new BadRequestError("Invalid or expired password reset token", "INVALID_RESET_TOKEN");
   }
 
-  user.passwordHash = await bcrypt.hash(password, 12);
+  user.passwordHash = await passwordHelper.hashPassword(password);
   user.resetPasswordToken = null;
   user.resetPasswordExpires = null;
   await user.save();
 
-  await RefreshToken.updateMany(
-    { userId: user._id },
-    { isRevoked: true }
-  );
+  await RefreshToken.updateMany({ userId: user._id }, { isRevoked: true });
 };
 
 module.exports = {

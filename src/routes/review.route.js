@@ -1,103 +1,41 @@
-const router =
-  require("express").Router();
+const router = require('express').Router();
 
-const authMiddleware =
-  require("../middlewares/auth.middleware");
+const authMiddleware = require('../middlewares/auth.middleware');
 
-const roleMiddleware =
-  require("../middlewares/role.middleware");
+const roleMiddleware = require('../middlewares/role.middleware');
 
-const validate =
-  require("../middlewares/validate.middleware");
+const validate = require('../middlewares/validate.middleware');
 
 const {
-
   createReview,
-
   updateReview,
-
   deleteReview,
-
   getCourseReviews,
-
   getMyReview,
+} = require('../controllers/review.controller');
 
-} = require(
-  "../controllers/review.controller"
-);
-
-const {
-
-  createReviewSchema,
-
-  updateReviewSchema,
-
-} = require(
-  "../validation/review.validation"
-);
+const { createReviewSchema, updateReviewSchema } = require('../validations/review.validation');
 
 router.post(
-
-  "/",
-
+  '/',
   authMiddleware,
-
-  roleMiddleware("student"),
-
-  validate(
-    createReviewSchema
-  ),
-
+  roleMiddleware('student'),
+  validate(createReviewSchema),
   createReview
-
 );
 
 router.patch(
-
-  "/:id",
-
+  '/:id',
   authMiddleware,
-
-  roleMiddleware("student"),
-
-  validate(
-    updateReviewSchema
-  ),
-
+  roleMiddleware('student'),
+  validate(updateReviewSchema),
   updateReview
-
 );
 
-router.delete(
+router.delete('/:id', authMiddleware, roleMiddleware('student'), deleteReview);
 
-  "/:id",
+router.get('/my/:courseId', authMiddleware, roleMiddleware('student'), getMyReview);
 
-  authMiddleware,
-
-  roleMiddleware("student"),
-
-  deleteReview
-
-);
-
-router.get(
-
-  "/my/:courseId",
-
-  authMiddleware,
-
-  roleMiddleware("student"),
-
-  getMyReview
-
-);
-
-router.get(
-
-  "/course/:courseId",
-
-  getCourseReviews
-
-);
+router.get('/course/:courseId', getCourseReviews);
 
 module.exports = router;

@@ -1,14 +1,10 @@
-const router =
-  require("express").Router();
+const router = require('express').Router();
 
-const authMiddleware =
-  require("../middlewares/auth.middleware");
+const authMiddleware = require('../middlewares/auth.middleware');
 
-const roleMiddleware =
-  require("../middlewares/role.middleware");
+const roleMiddleware = require('../middlewares/role.middleware');
 
-const validate =
-  require("../middlewares/validate.middleware");
+const validate = require('../middlewares/validate.middleware');
 
 const {
   createCourse,
@@ -16,133 +12,81 @@ const {
   getCourseById,
   updateCourse,
   deleteCourse,
-  publishCourse,
+  submitCourse,
   unpublishCourse,
   uploadThumbnail,
   removeThumbnail,
   uploadPreviewVideo,
   removePreviewVideo,
   getSearchSuggestions,
-} = require(
-  "../controllers/course.controller"
-);
+} = require('../controllers/course.controller');
 
-const {
-  uploadImage,
-  uploadVideo,
-} = require("../middlewares/upload.middleware");
+const { uploadImage, uploadVideo } = require('../middlewares/upload.middleware');
 
-const {
-  createCourseSchema,
-  updateCourseSchema,
-} = require(
-  "../validation/course.validation"
-);
+const { createCourseSchema, updateCourseSchema } = require('../validations/course.validation');
 
 router.post(
-  "/",
+  '/',
   authMiddleware,
-  roleMiddleware(
-    "instructor",
-    "admin"
-  ),
-  validate(
-    createCourseSchema
-  ),
+  roleMiddleware('instructor', 'admin'),
+  validate(createCourseSchema),
   createCourse
 );
 
-router.get(
-  "/my-courses",
-  authMiddleware,
-  roleMiddleware(
-    "instructor",
-    "admin"
-  ),
-  getMyCourses
-);
+router.get('/my-courses', authMiddleware, roleMiddleware('instructor', 'admin'), getMyCourses);
 
-router.get(
-  "/search/suggestions",
-  getSearchSuggestions
-);
+router.get('/search/suggestions', getSearchSuggestions);
 
-router.get(
-  "/:id",
-  authMiddleware,
-  getCourseById
-);
+router.get('/:id', authMiddleware, getCourseById);
 
 router.patch(
-  "/:id",
+  '/:id',
   authMiddleware,
-  roleMiddleware(
-    "instructor",
-    "admin"
-  ),
-  validate(
-    updateCourseSchema
-  ),
+  roleMiddleware('instructor', 'admin'),
+  validate(updateCourseSchema),
   updateCourse
 );
 
-router.delete(
-  "/:id",
-  authMiddleware,
-  roleMiddleware(
-    "instructor",
-    "admin"
-  ),
-  deleteCourse
-);
+router.delete('/:id', authMiddleware, roleMiddleware('instructor', 'admin'), deleteCourse);
+
+router.patch('/:id/submit', authMiddleware, roleMiddleware('instructor', 'admin'), submitCourse);
+
+router.post('/:id/publish', authMiddleware, roleMiddleware('instructor', 'admin'), submitCourse);
 
 router.post(
-  "/:id/publish",
+  '/:id/unpublish',
   authMiddleware,
-  roleMiddleware(
-    "instructor",
-    "admin"
-  ),
-  publishCourse
-);
-
-router.post(
-  "/:id/unpublish",
-  authMiddleware,
-  roleMiddleware(
-    "instructor",
-    "admin"
-  ),
+  roleMiddleware('instructor', 'admin'),
   unpublishCourse
 );
 
 router.post(
-  "/:id/thumbnail",
+  '/:id/thumbnail',
   authMiddleware,
-  roleMiddleware("instructor", "admin"),
-  uploadImage.single("thumbnail"),
+  roleMiddleware('instructor', 'admin'),
+  uploadImage.single('thumbnail'),
   uploadThumbnail
 );
 
 router.delete(
-  "/:id/thumbnail",
+  '/:id/thumbnail',
   authMiddleware,
-  roleMiddleware("instructor", "admin"),
+  roleMiddleware('instructor', 'admin'),
   removeThumbnail
 );
 
 router.post(
-  "/:id/preview-video",
+  '/:id/preview-video',
   authMiddleware,
-  roleMiddleware("instructor", "admin"),
-  uploadVideo.single("previewVideo"),
+  roleMiddleware('instructor', 'admin'),
+  uploadVideo.single('previewVideo'),
   uploadPreviewVideo
 );
 
 router.delete(
-  "/:id/preview-video",
+  '/:id/preview-video',
   authMiddleware,
-  roleMiddleware("instructor", "admin"),
+  roleMiddleware('instructor', 'admin'),
   removePreviewVideo
 );
 
