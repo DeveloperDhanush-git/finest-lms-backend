@@ -1,118 +1,53 @@
 const studentService = require('../services/student.service');
+const { asyncHandler, success } = require('../helpers');
 
-const getMyLearning = async (req, res, next) => {
-  try {
-    const data = await studentService.getMyLearning(req.user._id);
+const getMyLearning = asyncHandler(async (req, res) => {
+  const data = await studentService.getMyLearning(req.user._id);
+  return success(res, 'My learning retrieved successfully', data);
+});
 
-    return res.status(200).json({
-      success: true,
-      data,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+const getCourse = asyncHandler(async (req, res) => {
+  const data = await studentService.getCourse(req.user._id, req.params.courseId);
+  return success(res, 'Course retrieved successfully', data);
+});
 
-const getCourse = async (req, res, next) => {
-  try {
-    const data = await studentService.getCourse(req.user._id, req.params.courseId);
+const getCourseCurriculum = asyncHandler(async (req, res) => {
+  const data = await studentService.getCourseCurriculum(req.user._id, req.params.courseId);
+  return success(res, 'Course curriculum retrieved successfully', data);
+});
 
-    return res.status(200).json({
-      success: true,
-      data,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+const getLecture = asyncHandler(async (req, res) => {
+  const data = await studentService.getLecture(
+    req.user._id,
+    req.params.courseId,
+    req.params.lectureId
+  );
+  return success(res, 'Lecture retrieved successfully', data);
+});
 
-const getCourseCurriculum = async (req, res, next) => {
-  try {
-    const data = await studentService.getCourseCurriculum(req.user._id, req.params.courseId);
+const updateProgress = asyncHandler(async (req, res) => {
+  const data = await studentService.updateProgress(
+    req.user._id,
+    req.params.courseId,
+    req.params.lectureId
+  );
+  return success(res, 'Progress updated successfully', data);
+});
 
-    return res.status(200).json({
-      success: true,
-      data,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+const getCourseProgress = asyncHandler(async (req, res) => {
+  const data = await studentService.getCourseProgress(req.user._id, req.params.courseId);
+  return success(res, 'Course progress retrieved successfully', data);
+});
 
-const getLecture = async (req, res, next) => {
-  try {
-    const data = await studentService.getLecture(
-      req.user._id,
-      req.params.courseId,
-      req.params.lectureId
-    );
+const getResumeLecture = asyncHandler(async (req, res) => {
+  const data = await studentService.getResumeLecture(req.user._id, req.params.courseId);
+  return success(res, 'Resume lecture info retrieved successfully', data);
+});
 
-    return res.status(200).json({
-      success: true,
-      data,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-const updateProgress = async (req, res, next) => {
-  try {
-    const data = await studentService.updateProgress(
-      req.user._id,
-      req.params.courseId,
-      req.params.lectureId
-    );
-
-    return res.status(200).json({
-      success: true,
-      message: 'Progress updated successfully',
-      data,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-const getCourseProgress = async (req, res, next) => {
-  try {
-    const data = await studentService.getCourseProgress(req.user._id, req.params.courseId);
-
-    return res.status(200).json({
-      success: true,
-      data,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-const getResumeLecture = async (req, res, next) => {
-  try {
-    const data = await studentService.getResumeLecture(req.user._id, req.params.courseId);
-
-    return res.status(200).json({
-      success: true,
-      data,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-const completeCourse = async (req, res, next) => {
-  try {
-    const data = await studentService.completeCourse(req.user._id, req.params.courseId);
-
-    return res.status(200).json({
-      success: true,
-      message: 'Course completed successfully',
-      data,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+const completeCourse = asyncHandler(async (req, res) => {
+  const data = await studentService.completeCourse(req.user._id, req.params.courseId);
+  return success(res, 'Course completed successfully', data);
+});
 
 module.exports = {
   getMyLearning,

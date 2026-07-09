@@ -97,15 +97,26 @@ const completePayment = async (payment, paymentId, signature) => {
     });
 
     for (const course of payment.courses) {
-      const exists = await Enrollment.findOne({
+      const existingEnrollment = await Enrollment.findOne({
         studentId: payment.studentId,
 
         courseId: course.courseId,
-
-        status: { $in: ['active', 'completed'] },
       }).session(session);
 
-      if (!exists) {
+      if (existingEnrollment) {
+        if (existingEnrollment.status === 'cancelled') {
+          existingEnrollment.status = 'active';
+          existingEnrollment.paymentId = payment._id;
+          existingEnrollment.amountPaid = course.price;
+          existingEnrollment.completedLectures = [];
+          existingEnrollment.progressPercentage = 0;
+          existingEnrollment.completedAt = null;
+          existingEnrollment.lastAccessedLecture = null;
+          existingEnrollment.certificateIssued = false;
+          existingEnrollment.certificateIssuedAt = null;
+          await existingEnrollment.save({ session });
+        }
+      } else {
         await Enrollment.create(
           [
             {

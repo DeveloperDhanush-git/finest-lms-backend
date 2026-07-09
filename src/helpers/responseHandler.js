@@ -1,4 +1,4 @@
-const HTTP_STATUS_CODES = require('../constants/httpStatusCodes');
+const { HTTP_STATUS_CODES } = require('../constants');
 
 const sendResponse = (res, { statusCode = HTTP_STATUS_CODES.OK, success = true, message = '', data = null, meta = null } = {}) => {
     const payload = {

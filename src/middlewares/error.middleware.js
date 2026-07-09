@@ -1,5 +1,4 @@
-const HTTP_STATUS_CODES = require('../constants/httpStatusCodes');
-const { AppError } = require('../errors');
+const { HTTP_STATUS_CODES } = require('../constants');
 
 const errorMiddleware = (err, req, res, next) => {
     let error = { ...err };
@@ -7,25 +6,19 @@ const errorMiddleware = (err, req, res, next) => {
     error.stack = err.stack;
 
     if (err.name === 'CastError') {
-        const message = `Invalid resource identifier: ${err.value}`;
-        error = {
-            message,
-            statusCode: HTTP_STATUS_CODES.BAD_REQUEST,
-            errorCode: 'INVALID_ID_FORMAT',
-            isOperational: true,
-        };
+        error.message = `Invalid resource identifier format: ${err.value}`;
+        error.statusCode = HTTP_STATUS_CODES.BAD_REQUEST;
+        error.errorCode = 'INVALID_ID_FORMAT';
+        error.isOperational = true;
     }
 
     if (err.code === 11000) {
         const field = Object.keys(err.keyValue)[0];
         const value = err.keyValue[field];
-        const message = `Duplicate value '${value}' entered for field '${field}'. Please use another value!`;
-        error = {
-            message,
-            statusCode: HTTP_STATUS_CODES.CONFLICT,
-            errorCode: 'DUPLICATE_RESOURCE',
-            isOperational: true,
-        };
+        error.message = `Duplicate value '${value}' entered for field '${field}'. Please use another value!`;
+        error.statusCode = HTTP_STATUS_CODES.CONFLICT;
+        error.errorCode = 'DUPLICATE_RESOURCE';
+        error.isOperational = true;
     }
 
     if (err.name === 'ValidationError') {
@@ -33,32 +26,25 @@ const errorMiddleware = (err, req, res, next) => {
             field: el.path,
             message: el.message,
         }));
-        const message = `Invalid database inputs: ${errors.map(el => el.message).join(', ')}`;
-        error = {
-            message,
-            statusCode: HTTP_STATUS_CODES.BAD_REQUEST,
-            errorCode: 'DB_VALIDATION_ERROR',
-            errors,
-            isOperational: true,
-        };
+        error.message = `Invalid database inputs: ${errors.map(el => el.message).join(', ')}`;
+        error.statusCode = HTTP_STATUS_CODES.BAD_REQUEST;
+        error.errorCode = 'DB_VALIDATION_ERROR';
+        error.errors = errors;
+        error.isOperational = true;
     }
 
     if (err.name === 'JsonWebTokenError') {
-        error = {
-            message: 'Invalid authorization token',
-            statusCode: HTTP_STATUS_CODES.UNAUTHORIZED,
-            errorCode: 'INVALID_TOKEN',
-            isOperational: true,
-        };
+        error.message = 'Invalid authorization token';
+        error.statusCode = HTTP_STATUS_CODES.UNAUTHORIZED;
+        error.errorCode = 'INVALID_TOKEN';
+        error.isOperational = true;
     }
 
     if (err.name === 'TokenExpiredError') {
-        error = {
-            message: 'Authorization token has expired',
-            statusCode: HTTP_STATUS_CODES.UNAUTHORIZED,
-            errorCode: 'EXPIRED_TOKEN',
-            isOperational: true,
-        };
+        error.message = 'Authorization token has expired';
+        error.statusCode = HTTP_STATUS_CODES.UNAUTHORIZED;
+        error.errorCode = 'EXPIRED_TOKEN';
+        error.isOperational = true;
     }
 
     const statusCode = error.statusCode || err.statusCode || HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR;
@@ -67,14 +53,16 @@ const errorMiddleware = (err, req, res, next) => {
     const isOperational = error.isOperational || err.isOperational || false;
     const validationErrors = error.errors || err.errors || undefined;
 
-    if (!isOperational) {
-        console.error(`[CRITICAL EXCEPTION] [ReqID: ${req.id || 'N/A'}]`, err);
+    const isServerError = statusCode >= 500;
+
+    if (isServerError || !isOperational) {
+        console.error(`[SERVER ERROR] [ReqID: ${req.id || 'N/A'}]`, err);
     }
 
     const responsePayload = {
         success: false,
-        message,
-        errorCode,
+        message: isServerError ? 'Internal Server Error occurred' : message,
+        errorCode: isServerError ? 'INTERNAL_SERVER_ERROR' : errorCode,
     };
 
     if (validationErrors) {
@@ -83,6 +71,9 @@ const errorMiddleware = (err, req, res, next) => {
 
     if (process.env.NODE_ENV === 'development') {
         responsePayload.stack = error.stack || err.stack;
+        if (isServerError) {
+            responsePayload.message = message;
+        }
     }
 
     res.status(statusCode).json(responsePayload);

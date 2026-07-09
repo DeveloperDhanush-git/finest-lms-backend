@@ -72,6 +72,14 @@ const createReview = async (userId, data) => {
   });
 
   if (exists) {
+    if (exists.isDeleted) {
+      exists.isDeleted = false;
+      exists.rating = data.rating;
+      exists.review = data.review;
+      await exists.save();
+      await updateCourseRating(data.courseId);
+      return exists;
+    }
     throw new Error('You have already reviewed this course.');
   }
 

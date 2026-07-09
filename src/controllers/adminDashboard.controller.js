@@ -1,17 +1,10 @@
 const adminDashboardService = require('../services/adminDashboard.service');
+const { asyncHandler, success } = require('../helpers');
 
-const getDashboard = async (req, res, next) => {
-  try {
-    const dashboard = await adminDashboardService.getDashboard();
-
-    return res.status(200).json({
-      success: true,
-      data: dashboard,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+const getDashboard = asyncHandler(async (req, res) => {
+  const dashboard = await adminDashboardService.getDashboard();
+  return success(res, 'Admin dashboard retrieved successfully', dashboard);
+});
 
 module.exports = {
   getDashboard,

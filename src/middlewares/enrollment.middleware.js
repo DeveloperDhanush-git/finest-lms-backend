@@ -1,28 +1,25 @@
 const Enrollment = require('../models/enrollment.model');
+const { ForbiddenError } = require('../errors');
+const { asyncHandler } = require('../helpers');
+const { STATUSES } = require('../constants');
 
-const checkEnrollment = async (req, res, next) => {
-  try {
-    const courseId = req.params.courseId || req.body.courseId;
+const checkEnrollment = asyncHandler(async (req, res, next) => {
+  const courseId = req.params.courseId || req.body.courseId;
 
-    const enrollment = await Enrollment.findOne({
-      studentId: req.user._id,
-      courseId,
-      status: { $in: ['active', 'completed'] },
-    });
+  const enrollment = await Enrollment.findOne({
+    studentId: req.user._id,
+    courseId,
+    status: {
+      $in: [STATUSES.ENROLLMENT.ACTIVE, STATUSES.ENROLLMENT.COMPLETED]
+    },
+  });
 
-    if (!enrollment) {
-      return res.status(403).json({
-        success: false,
-        message: 'You are not enrolled in this course',
-      });
-    }
-
-    req.enrollment = enrollment;
-
-    next();
-  } catch (error) {
-    next(error);
+  if (!enrollment) {
+    throw new ForbiddenError('You are not enrolled in this course');
   }
-};
+
+  req.enrollment = enrollment;
+  next();
+});
 
 module.exports = checkEnrollment;

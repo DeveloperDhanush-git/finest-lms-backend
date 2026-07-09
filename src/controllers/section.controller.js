@@ -1,56 +1,25 @@
 const sectionService = require('../services/section.service');
+const { asyncHandler, success, created } = require('../helpers');
 
-const createSection = async (req, res, next) => {
-  try {
-    const section = await sectionService.createSection(req.user._id, req.params.courseId, req.body);
+const createSection = asyncHandler(async (req, res) => {
+  const section = await sectionService.createSection(req.user._id, req.params.courseId, req.body);
+  return created(res, 'Section created successfully', section);
+});
 
-    res.status(201).json({
-      success: true,
-      data: section,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+const getSections = asyncHandler(async (req, res) => {
+  const sections = await sectionService.getSections(req.params.courseId, req.user._id);
+  return success(res, 'Sections retrieved successfully', sections);
+});
 
-const getSections = async (req, res, next) => {
-  try {
-    const sections = await sectionService.getSections(req.params.courseId, req.user._id);
+const updateSection = asyncHandler(async (req, res) => {
+  const section = await sectionService.updateSection(req.params.id, req.user._id, req.body);
+  return success(res, 'Section updated successfully', section);
+});
 
-    res.status(200).json({
-      success: true,
-      data: sections,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-const updateSection = async (req, res, next) => {
-  try {
-    const section = await sectionService.updateSection(req.params.id, req.user._id, req.body);
-
-    res.status(200).json({
-      success: true,
-      data: section,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-const deleteSection = async (req, res, next) => {
-  try {
-    await sectionService.deleteSection(req.params.id, req.user._id);
-
-    res.status(200).json({
-      success: true,
-      message: 'Section deleted successfully',
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+const deleteSection = asyncHandler(async (req, res) => {
+  await sectionService.deleteSection(req.params.id, req.user._id);
+  return success(res, 'Section deleted successfully');
+});
 
 module.exports = {
   createSection,

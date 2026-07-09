@@ -1,107 +1,39 @@
 const reviewService = require('../services/review.service');
+const { asyncHandler, success, created } = require('../helpers');
 
-const createReview = async (req, res, next) => {
-  try {
-    const review = await reviewService.createReview(req.user._id, req.body);
+const createReview = asyncHandler(async (req, res) => {
+  const review = await reviewService.createReview(req.user._id, req.body);
+  return created(res, 'Review added successfully.', review);
+});
 
-    return res.status(201).json({
-      success: true,
+const updateReview = asyncHandler(async (req, res) => {
+  const review = await reviewService.updateReview(req.params.id, req.user._id, req.body);
+  return success(res, 'Review updated successfully.', review);
+});
 
-      message: 'Review added successfully.',
+const deleteReview = asyncHandler(async (req, res) => {
+  await reviewService.deleteReview(req.params.id, req.user._id);
+  return success(res, 'Review deleted successfully.');
+});
 
-      data: review,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+const getCourseReviews = asyncHandler(async (req, res) => {
+  const reviews = await reviewService.getCourseReviews(
+    req.params.courseId,
+    req.query.page,
+    req.query.limit
+  );
+  return success(res, 'Course reviews retrieved successfully', reviews);
+});
 
-const updateReview = async (req, res, next) => {
-  try {
-    const review = await reviewService.updateReview(
-      req.params.id,
-
-      req.user._id,
-
-      req.body
-    );
-
-    return res.status(200).json({
-      success: true,
-
-      message: 'Review updated successfully.',
-
-      data: review,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-const deleteReview = async (req, res, next) => {
-  try {
-    await reviewService.deleteReview(
-      req.params.id,
-
-      req.user._id
-    );
-
-    return res.status(200).json({
-      success: true,
-
-      message: 'Review deleted successfully.',
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-const getCourseReviews = async (req, res, next) => {
-  try {
-    const reviews = await reviewService.getCourseReviews(
-      req.params.courseId,
-
-      req.query.page,
-
-      req.query.limit
-    );
-
-    return res.status(200).json({
-      success: true,
-
-      data: reviews,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-const getMyReview = async (req, res, next) => {
-  try {
-    const review = await reviewService.getMyReview(
-      req.params.courseId,
-
-      req.user._id
-    );
-
-    return res.status(200).json({
-      success: true,
-
-      data: review,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+const getMyReview = asyncHandler(async (req, res) => {
+  const review = await reviewService.getMyReview(req.params.courseId, req.user._id);
+  return success(res, 'My review retrieved successfully', review);
+});
 
 module.exports = {
   createReview,
-
   updateReview,
-
   deleteReview,
-
   getCourseReviews,
-
   getMyReview,
 };

@@ -1,76 +1,36 @@
 const certificateService = require('../services/certificate.service');
+const { asyncHandler, success, created } = require('../helpers');
 
-const generateCertificate = async (req, res, next) => {
-  try {
-    const certificate = await certificateService.generateCertificate(
-      req.user._id,
-      req.params.courseId
-    );
+const generateCertificate = asyncHandler(async (req, res) => {
+  const certificate = await certificateService.generateCertificate(
+    req.user._id,
+    req.params.courseId
+  );
+  return created(res, 'Certificate generated successfully.', certificate);
+});
 
-    return res.status(201).json({
-      success: true,
-      message: 'Certificate generated successfully.',
-      data: certificate,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+const getMyCertificates = asyncHandler(async (req, res) => {
+  const certificates = await certificateService.getMyCertificates(req.user._id);
+  return success(res, 'Certificates retrieved successfully', certificates);
+});
 
-const getMyCertificates = async (req, res, next) => {
-  try {
-    const certificates = await certificateService.getMyCertificates(req.user._id);
+const getCertificateByCourse = asyncHandler(async (req, res) => {
+  const certificate = await certificateService.getCertificateByCourse(
+    req.user._id,
+    req.params.courseId
+  );
+  return success(res, 'Certificate retrieved successfully', certificate);
+});
 
-    return res.status(200).json({
-      success: true,
-      data: certificates,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+const downloadCertificate = asyncHandler(async (req, res) => {
+  const result = await certificateService.downloadCertificate(req.user._id, req.params.courseId);
+  return success(res, 'Certificate downloaded successfully', result);
+});
 
-const getCertificateByCourse = async (req, res, next) => {
-  try {
-    const certificate = await certificateService.getCertificateByCourse(
-      req.user._id,
-      req.params.courseId
-    );
-
-    return res.status(200).json({
-      success: true,
-      data: certificate,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-const downloadCertificate = async (req, res, next) => {
-  try {
-    const result = await certificateService.downloadCertificate(req.user._id, req.params.courseId);
-
-    return res.status(200).json({
-      success: true,
-      data: result,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-const verifyCertificate = async (req, res, next) => {
-  try {
-    const certificate = await certificateService.verifyCertificate(req.params.verificationCode);
-
-    return res.status(200).json({
-      success: true,
-      data: certificate,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+const verifyCertificate = asyncHandler(async (req, res) => {
+  const certificate = await certificateService.verifyCertificate(req.params.verificationCode);
+  return success(res, 'Certificate verified successfully', certificate);
+});
 
 module.exports = {
   generateCertificate,

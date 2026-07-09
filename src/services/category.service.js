@@ -69,7 +69,6 @@ const updateCategory = async (id, updateData) => {
     const existingCategory = await Category.findOne({
       slug: updateData.slug,
       _id: { $ne: id },
-      isActive: true,
     });
 
     if (existingCategory) {

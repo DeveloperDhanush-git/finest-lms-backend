@@ -1,108 +1,44 @@
 const paymentService = require('../services/payment.service');
+const { asyncHandler, success } = require('../helpers');
 
-const createCheckout = async (req, res, next) => {
-  try {
-    const { payment, razorpayOrder } = await paymentService.createCheckout(req.user._id);
+const createCheckout = asyncHandler(async (req, res) => {
+  const { payment, razorpayOrder } = await paymentService.createCheckout(req.user._id);
 
-    return res.status(200).json({
-      success: true,
+  return success(res, 'Checkout created successfully.', {
+    paymentId: payment._id,
+    orderId: razorpayOrder.id,
+    amount: razorpayOrder.amount,
+    currency: razorpayOrder.currency,
+    key: process.env.RAZORPAY_KEY_ID,
+  });
+});
 
-      message: 'Checkout created successfully.',
+const verifyPayment = asyncHandler(async (req, res) => {
+  const payment = await paymentService.verifyPayment(req.user._id, req.body);
 
-      data: {
-        paymentId: payment._id,
+  return success(res, 'Payment verified successfully.', {
+    paymentId: payment._id,
+    orderId: payment.razorpayOrderId,
+    paymentIdRazorpay: payment.razorpayPaymentId,
+    status: payment.status,
+    paidAt: payment.paidAt,
+  });
+});
 
-        orderId: razorpayOrder.id,
+const getPaymentHistory = asyncHandler(async (req, res) => {
+  const payments = await paymentService.getPaymentHistory(req.user._id);
+  return success(res, 'Payment history retrieved successfully', payments);
+});
 
-        amount: razorpayOrder.amount,
+const getPaymentById = asyncHandler(async (req, res) => {
+  const payment = await paymentService.getPaymentById(req.params.id, req.user._id);
+  return success(res, 'Payment details retrieved successfully', payment);
+});
 
-        currency: razorpayOrder.currency,
-
-        key: process.env.RAZORPAY_KEY_ID,
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-const verifyPayment = async (req, res, next) => {
-  try {
-    const payment = await paymentService.verifyPayment(
-      req.user._id,
-
-      req.body
-    );
-
-    return res.status(200).json({
-      success: true,
-
-      message: 'Payment verified successfully.',
-
-      data: {
-        paymentId: payment._id,
-
-        orderId: payment.razorpayOrderId,
-
-        paymentIdRazorpay: payment.razorpayPaymentId,
-
-        status: payment.status,
-
-        paidAt: payment.paidAt,
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-const getPaymentHistory = async (req, res, next) => {
-  try {
-    const payments = await paymentService.getPaymentHistory(req.user._id);
-
-    return res.status(200).json({
-      success: true,
-
-      data: payments,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-const getPaymentById = async (req, res, next) => {
-  try {
-    const payment = await paymentService.getPaymentById(
-      req.params.id,
-
-      req.user._id
-    );
-
-    return res.status(200).json({
-      success: true,
-
-      data: payment,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-const paymentWebhook = async (req, res, next) => {
-  try {
-    await paymentService.handleWebhook(
-      req.headers,
-
-      req.body
-    );
-
-    return res.status(200).json({
-      success: true,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+const paymentWebhook = asyncHandler(async (req, res) => {
+  await paymentService.handleWebhook(req.headers, req.body);
+  return success(res, 'Webhook handled successfully');
+});
 
 module.exports = {
   createCheckout,

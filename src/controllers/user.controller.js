@@ -1,148 +1,85 @@
 const userService = require('../services/user.service');
-
 const fs = require('fs-extra');
 const path = require('path');
 const { randomUUID } = require('crypto');
-
 const { uploadFileToS3 } = require('../services/s3.service');
+const { asyncHandler, success } = require('../helpers');
+const { BadRequestError } = require('../errors');
 
-const getUserProfile = async (req, res, next) => {
-  try {
-    const user = await userService.getUserDetails(req.user._id);
+const getUserProfile = asyncHandler(async (req, res) => {
+  const user = await userService.getUserDetails(req.user._id);
 
-    return res.status(200).json({
-      success: true,
-      message: 'Profile fetched successfully',
-      data: {
-        id: user._id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        fullName: `${user.firstName} ${user.lastName}`,
-        email: user.email,
-        role: user.role,
-        avatar: user.avatar,
-        phone: user.phone,
-        countryCode: user.countryCode,
-        accountStatus: user.accountStatus,
-        createdAt: user.createdAt,
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+  return success(res, 'Profile fetched successfully', {
+    id: user._id,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    fullName: `${user.firstName} ${user.lastName}`,
+    email: user.email,
+    role: user.role,
+    avatar: user.avatar,
+    phone: user.phone,
+    countryCode: user.countryCode,
+    accountStatus: user.accountStatus,
+    createdAt: user.createdAt,
+  });
+});
 
-const updateUserProfile = async (req, res, next) => {
-  try {
-    const user = await userService.updateUserDetails(req.user._id, req.body);
-    return res.status(200).json({
-      success: true,
-      message: 'Profile updated successfully',
-      data: {
-        id: user._id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        fullName: `${user.firstName} ${user.lastName}`,
-        email: user.email,
-        role: user.role,
-        avatar: user.avatar,
-        phone: user.phone,
-        countryCode: user.countryCode,
-        accountStatus: user.accountStatus,
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+const updateUserProfile = asyncHandler(async (req, res) => {
+  const user = await userService.updateUserDetails(req.user._id, req.body);
 
-const deleteUserProfile = async (req, res, next) => {
-  try {
-    await userService.deleteUser(req.user._id);
+  return success(res, 'Profile updated successfully', {
+    id: user._id,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    fullName: `${user.firstName} ${user.lastName}`,
+    email: user.email,
+    role: user.role,
+    avatar: user.avatar,
+    phone: user.phone,
+    countryCode: user.countryCode,
+    accountStatus: user.accountStatus,
+  });
+});
 
-    return res.status(200).json({
-      success: true,
-      message: 'Account deleted successfully',
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+const deleteUserProfile = asyncHandler(async (req, res) => {
+  await userService.deleteUser(req.user._id);
+  return success(res, 'Account deleted successfully');
+});
 
-const uploadAvatar = async (req, res, next) => {
+const uploadAvatar = asyncHandler(async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({
-        success: false,
-
-        message: 'Please upload an image.',
-      });
+      throw new BadRequestError('Please upload an image.');
     }
 
     const extension = path.extname(req.file.originalname);
-
     const key = `profiles/${req.user._id}/${randomUUID()}${extension}`;
 
-    const avatarUrl = await uploadFileToS3(
-      req.file.path,
+    const avatarUrl = await uploadFileToS3(req.file.path, key);
 
-      key
-    );
+    const user = await userService.updateAvatar(req.user._id, avatarUrl, key);
 
-    const user = await userService.updateAvatar(
-      req.user._id,
-
-      avatarUrl,
-
-      key
-    );
-
-    return res.status(200).json({
-      success: true,
-
-      message: 'Avatar updated successfully.',
-
-      data: {
-        avatar: user.avatar,
-
-        avatarKey: user.avatarKey,
-      },
+    return success(res, 'Avatar updated successfully.', {
+      avatar: user.avatar,
+      avatarKey: user.avatarKey,
     });
-  } catch (error) {
-    next(error);
   } finally {
     if (req.file?.path) {
       await fs.remove(req.file.path);
     }
   }
-};
+});
 
-const removeAvatar = async (req, res, next) => {
-  try {
-    await userService.deleteAvatar(req.user._id);
+const removeAvatar = asyncHandler(async (req, res) => {
+  await userService.deleteAvatar(req.user._id);
+  return success(res, 'Avatar removed successfully');
+});
 
-    return res.status(200).json({
-      success: true,
-      message: 'Avatar removed successfully',
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-const changePassword = async (req, res, next) => {
-  try {
-    const { currentPassword, newPassword } = req.body;
-    await userService.changePassword(req.user._id, currentPassword, newPassword);
-
-    res.status(200).json({
-      success: true,
-      message: 'Password changed successfully. All sessions have been revoked.',
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+const changePassword = asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  await userService.changePassword(req.user._id, currentPassword, newPassword);
+  return success(res, 'Password changed successfully. All sessions have been revoked.');
+});
 
 module.exports = {
   getUserProfile,

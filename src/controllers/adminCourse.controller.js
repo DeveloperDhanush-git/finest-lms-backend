@@ -1,62 +1,29 @@
 const adminCourseService = require('../services/adminCourse.service');
+const { asyncHandler, success } = require('../helpers');
 
-const getPendingCourses = async (req, res, next) => {
-  try {
-    const courses = await adminCourseService.getPendingCourses();
+const getPendingCourses = asyncHandler(async (req, res) => {
+  const courses = await adminCourseService.getPendingCourses();
+  return success(res, 'Pending courses retrieved successfully', courses);
+});
 
-    res.status(200).json({
-      success: true,
-      data: courses,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+const getAdminCourseById = asyncHandler(async (req, res) => {
+  const result = await adminCourseService.getAdminCourseById(req.params.courseId);
+  return success(res, 'Admin course details retrieved successfully', result);
+});
 
-const getAdminCourseById = async (req, res, next) => {
-  try {
-    const result = await adminCourseService.getAdminCourseById(req.params.courseId);
+const approveCourse = asyncHandler(async (req, res) => {
+  const course = await adminCourseService.approveCourse(req.params.courseId, req.user._id);
+  return success(res, 'Course approved successfully', course);
+});
 
-    res.status(200).json({
-      success: true,
-      data: result,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-const approveCourse = async (req, res, next) => {
-  try {
-    const course = await adminCourseService.approveCourse(req.params.courseId, req.user._id);
-
-    res.status(200).json({
-      success: true,
-      message: 'Course approved successfully',
-      data: course,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-const rejectCourse = async (req, res, next) => {
-  try {
-    const course = await adminCourseService.rejectCourse(
-      req.params.courseId,
-      req.user._id,
-      req.body.reason
-    );
-
-    res.status(200).json({
-      success: true,
-      message: 'Course rejected successfully',
-      data: course,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+const rejectCourse = asyncHandler(async (req, res) => {
+  const course = await adminCourseService.rejectCourse(
+    req.params.courseId,
+    req.user._id,
+    req.body.reason
+  );
+  return success(res, 'Course rejected successfully', course);
+});
 
 module.exports = {
   getPendingCourses,

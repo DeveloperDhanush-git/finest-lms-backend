@@ -1,30 +1,18 @@
 const publicCourseService = require('../services/publicCourse.service');
+const { asyncHandler, success } = require('../helpers');
 
-const getCourses = async (req, res, next) => {
-  try {
-    const data = await publicCourseService.getPublicCourses(req.query);
+const getCourses = asyncHandler(async (req, res) => {
+  const data = await publicCourseService.getPublicCourses(req.query);
+  return res.status(200).json({
+    success: true,
+    ...data,
+  });
+});
 
-    res.status(200).json({
-      success: true,
-      ...data,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-const getCourseById = async (req, res, next) => {
-  try {
-    const course = await publicCourseService.getPublicCourseById(req.params.id);
-
-    res.status(200).json({
-      success: true,
-      data: course,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+const getCourseById = asyncHandler(async (req, res) => {
+  const course = await publicCourseService.getPublicCourseById(req.params.id);
+  return success(res, 'Public course retrieved successfully', course);
+});
 
 module.exports = {
   getCourses,

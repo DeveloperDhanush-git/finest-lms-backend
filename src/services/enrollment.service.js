@@ -1,18 +1,18 @@
 const Enrollment = require('../models/enrollment.model');
-
 const Course = require('../models/course.model');
-
 const InstructorProfile = require('../models/instructor.model');
+const { NotFoundError, BadRequestError, ConflictError } = require('../errors');
+const { STATUSES } = require('../constants');
 
 const enrollCourse = async (userId, courseId) => {
   const course = await Course.findOne({
     _id: courseId,
-    status: 'published',
+    status: STATUSES.COURSE.PUBLISHED,
     isDeleted: false,
   });
 
   if (!course) {
-    throw new Error('Course not found');
+    throw new NotFoundError('Course not found');
   }
 
   const instructor = await InstructorProfile.findOne({
@@ -20,17 +20,17 @@ const enrollCourse = async (userId, courseId) => {
   });
 
   if (instructor && instructor.userId.toString() === userId.toString()) {
-    throw new Error('You cannot enroll in your own course');
+    throw new BadRequestError('You cannot enroll in your own course');
   }
 
   const existingEnrollment = await Enrollment.findOne({
     studentId: userId,
     courseId,
-    status: { $in: ['active', 'completed'] },
+    status: { $in: [STATUSES.ENROLLMENT.ACTIVE, STATUSES.ENROLLMENT.COMPLETED] },
   });
 
   if (existingEnrollment) {
-    throw new Error('Already enrolled');
+    throw new ConflictError('Already enrolled');
   }
 
   const enrollment = await Enrollment.create({
@@ -50,7 +50,7 @@ const enrollCourse = async (userId, courseId) => {
 const getMyEnrollments = async (userId) => {
   return await Enrollment.find({
     studentId: userId,
-    status: { $in: ['active', 'completed'] },
+    status: { $in: [STATUSES.ENROLLMENT.ACTIVE, STATUSES.ENROLLMENT.COMPLETED] },
   })
     .populate({
       path: 'courseId',
