@@ -91,6 +91,9 @@ const approveCourse = async (courseId, userId) => {
   const course = await Course.findOne({
     _id: courseId,
     isDeleted: false,
+  }).populate({
+    path: 'instructorId',
+    select: 'userId',
   });
 
   if (!course) {
@@ -111,6 +114,29 @@ const approveCourse = async (courseId, userId) => {
 
   await course.save();
 
+  // Set all sections of the course to isPublished: true
+  await CourseSection.updateMany(
+    { courseId: course._id, isDeleted: false },
+    { $set: { isPublished: true } }
+  );
+
+  // Send Notification
+  try {
+    const { createNotification } = require('./notification.service');
+    if (course.instructorId && course.instructorId.userId) {
+      await createNotification({
+        recipientId: course.instructorId.userId,
+        senderId: userId,
+        type: 'COURSE_APPROVED',
+        title: 'Course Approved',
+        message: `Your course "${course.title}" has been approved and published!`,
+        data: { courseId: course._id },
+      });
+    }
+  } catch (err) {
+    console.error('Failed to send COURSE_APPROVED notification:', err.message);
+  }
+
   return course;
 };
 
@@ -118,6 +144,9 @@ const rejectCourse = async (courseId, userId, reason) => {
   const course = await Course.findOne({
     _id: courseId,
     isDeleted: false,
+  }).populate({
+    path: 'instructorId',
+    select: 'userId',
   });
 
   if (!course) {
@@ -137,6 +166,23 @@ const rejectCourse = async (courseId, userId, reason) => {
   course.publishedAt = null;
 
   await course.save();
+
+  // Send Notification
+  try {
+    const { createNotification } = require('./notification.service');
+    if (course.instructorId && course.instructorId.userId) {
+      await createNotification({
+        recipientId: course.instructorId.userId,
+        senderId: userId,
+        type: 'COURSE_REJECTED',
+        title: 'Course Rejected',
+        message: `Your course "${course.title}" was not approved. Reason: ${reason}`,
+        data: { courseId: course._id, reason },
+      });
+    }
+  } catch (err) {
+    console.error('Failed to send COURSE_REJECTED notification:', err.message);
+  }
 
   return course;
 };

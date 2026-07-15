@@ -16,6 +16,7 @@ const {
   uploadLectureResource,
   removeLectureResource,
   getLectureVideoStatus,
+  reorderLectures,
 } = require('../controllers/lecture.controller');
 
 const { uploadVideo, uploadResource } = require('../middlewares/upload.middleware');
@@ -82,6 +83,13 @@ router.delete(
   authMiddleware,
   roleMiddleware('instructor', 'admin'),
   removeLectureResource
+);
+
+router.put(
+  '/section/:sectionId/reorder',
+  authMiddleware,
+  roleMiddleware('instructor', 'admin'),
+  reorderLectures
 );
 
 module.exports = router;

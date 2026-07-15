@@ -99,6 +99,11 @@ const updateCourse = async (courseId, userId, updateData) => {
     throw new Error('Course not found');
   }
 
+  if (course.status === 'published') {
+    course.status = 'draft';
+    await course.save();
+  }
+
   return course;
 };
 
@@ -246,6 +251,25 @@ const submitCourse = async (courseId, userId) => {
 
   await course.save();
 
+  // Send notifications to admins
+  try {
+    const User = require('../models/user.model');
+    const { createNotification } = require('./notification.service');
+    const admins = await User.find({ role: 'admin' });
+    for (const admin of admins) {
+      await createNotification({
+        recipientId: admin._id,
+        senderId: userId, // the instructor
+        type: 'COURSE_SUBMITTED',
+        title: 'New Course Submitted',
+        message: `Instructor has submitted the course "${course.title}" for review.`,
+        data: { courseId: course._id },
+      });
+    }
+  } catch (err) {
+    console.error('Failed to send COURSE_SUBMITTED notification:', err.message);
+  }
+
   return course;
 };
 
@@ -308,6 +332,10 @@ const updateThumbnail = async (courseId, userId, thumbnailUrl, thumbnailKey) => 
     await deleteFileFromS3(course.thumbnailKey);
   }
 
+  if (course.status === 'published') {
+    course.status = 'draft';
+  }
+
   course.thumbnail = thumbnailUrl;
 
   course.thumbnailKey = thumbnailKey;
@@ -342,6 +370,10 @@ const deleteThumbnail = async (courseId, userId) => {
     await deleteFileFromS3(course.thumbnailKey);
   }
 
+  if (course.status === 'published') {
+    course.status = 'draft';
+  }
+
   course.thumbnail = null;
 
   course.thumbnailKey = null;
@@ -372,6 +404,10 @@ const updatePreviewVideo = async (courseId, userId, videoData) => {
 
   if (course.previewVideo && course.previewVideo.key) {
     await deleteFileFromS3(course.previewVideo.key);
+  }
+
+  if (course.status === 'published') {
+    course.status = 'draft';
   }
 
   course.previewVideo = {
@@ -408,6 +444,10 @@ const deletePreviewVideo = async (courseId, userId) => {
 
   if (course.previewVideo && course.previewVideo.key) {
     await deleteFileFromS3(course.previewVideo.key);
+  }
+
+  if (course.status === 'published') {
+    course.status = 'draft';
   }
 
   course.previewVideo = null;

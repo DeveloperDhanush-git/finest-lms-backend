@@ -15,6 +15,7 @@ const {
   getSections,
   updateSection,
   deleteSection,
+  reorderSections,
 } = require(
   "../controllers/section.controller"
 );
@@ -70,6 +71,16 @@ router.delete(
     "admin"
   ),
   deleteSection
+);
+
+router.put(
+  "/course/:courseId/reorder",
+  authMiddleware,
+  roleMiddleware(
+    "instructor",
+    "admin"
+  ),
+  reorderSections
 );
 
 module.exports = router;

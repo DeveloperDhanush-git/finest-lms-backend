@@ -66,7 +66,7 @@ const generateCertificatePdf = (data, outputPath) => {
 
     doc.fontSize(22);
 
-    doc.text('Finest LMS', 600, 500);
+    doc.text('CourseHub ', 600, 500);
 
     doc.end();
 

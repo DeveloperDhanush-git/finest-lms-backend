@@ -71,29 +71,48 @@ const createReview = async (userId, data) => {
     courseId: data.courseId,
   });
 
+  let review;
   if (exists) {
     if (exists.isDeleted) {
       exists.isDeleted = false;
       exists.rating = data.rating;
       exists.review = data.review;
-      await exists.save();
+      review = await exists.save();
       await updateCourseRating(data.courseId);
-      return exists;
+    } else {
+      throw new Error('You have already reviewed this course.');
     }
-    throw new Error('You have already reviewed this course.');
+  } else {
+    review = await Review.create({
+      studentId: userId,
+
+      courseId: data.courseId,
+
+      rating: data.rating,
+
+      review: data.review,
+    });
+
+    await updateCourseRating(data.courseId);
   }
 
-  const review = await Review.create({
-    studentId: userId,
-
-    courseId: data.courseId,
-
-    rating: data.rating,
-
-    review: data.review,
-  });
-
-  await updateCourseRating(data.courseId);
+  // Send Notification
+  try {
+    const { createNotification } = require('./notification.service');
+    const courseWithInstructor = await Course.findById(data.courseId).populate('instructorId');
+    if (courseWithInstructor && courseWithInstructor.instructorId && courseWithInstructor.instructorId.userId) {
+      await createNotification({
+        recipientId: courseWithInstructor.instructorId.userId,
+        senderId: userId, // student user
+        type: 'NEW_REVIEW',
+        title: 'New Course Review',
+        message: `A student has left a ${data.rating}-star review on your course "${courseWithInstructor.title}".`,
+        data: { courseId: data.courseId, reviewId: review._id },
+      });
+    }
+  } catch (err) {
+    console.error('Failed to send NEW_REVIEW notification:', err.message);
+  }
 
   return review;
 };

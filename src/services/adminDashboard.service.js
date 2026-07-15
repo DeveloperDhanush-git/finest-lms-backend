@@ -139,6 +139,48 @@ const getDashboard = async () => {
 
     .limit(5);
 
+  const students = await User.find({ role: 'student' })
+    .select('firstName lastName email avatar createdAt')
+    .sort({ createdAt: -1 });
+
+  const studentIds = students.map(s => s._id);
+  const studentEnrollments = await Enrollment.find({ studentId: { $in: studentIds } });
+
+  const studentDetails = students.map(s => {
+    const enrollments = studentEnrollments.filter(e => e.studentId.toString() === s._id.toString());
+    return {
+      _id: s._id,
+      firstName: s.firstName,
+      lastName: s.lastName,
+      email: s.email,
+      avatar: s.avatar,
+      createdAt: s.createdAt,
+      totalEnrollments: enrollments.length,
+      completedCourses: enrollments.filter(e => e.status === 'completed').length,
+    };
+  });
+
+  const instructors = await InstructorProfile.find()
+    .populate('userId', 'firstName lastName email avatar createdAt')
+    .sort({ createdAt: -1 });
+
+  const instructorDetails = instructors.map(inst => {
+    const u = inst.userId || {};
+    return {
+      _id: inst._id,
+      userId: u._id,
+      firstName: u.firstName || 'Teacher',
+      lastName: u.lastName || 'Dev',
+      email: u.email || '—',
+      avatar: u.avatar || '',
+      createdAt: u.createdAt || inst.createdAt,
+      totalCourses: inst.totalCourses || 0,
+      totalStudents: inst.totalStudents || 0,
+      averageRating: inst.averageRating || 0,
+      totalRevenue: inst.totalRevenue || 0,
+    };
+  });
+
   return {
     overview: {
       totalUsers,
@@ -165,6 +207,10 @@ const getDashboard = async () => {
 
       totalCertificates,
     },
+
+    students: studentDetails,
+
+    instructors: instructorDetails,
 
     recentUsers,
 

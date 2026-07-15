@@ -35,6 +35,11 @@ const createSection = async (userId, courseId, data) => {
     }
   }
 
+  if (course.status === 'published') {
+    course.status = 'draft';
+    await course.save();
+  }
+
   const section = await CourseSection.create({
     ...data,
     courseId,
@@ -106,6 +111,11 @@ const updateSection = async (sectionId, userId, data) => {
     }
   }
 
+  if (course.status === 'published') {
+    course.status = 'draft';
+    await course.save();
+  }
+
   const updatedSection = await CourseSection.findByIdAndUpdate(sectionId, data, {
     returnDocument: 'after',
     runValidators: true,
@@ -139,6 +149,11 @@ const deleteSection = async (sectionId, userId) => {
     throw new ForbiddenError('Unauthorized to delete this section');
   }
 
+  if (course.status === 'published') {
+    course.status = 'draft';
+    await course.save();
+  }
+
   const deletedSection = await CourseSection.findOneAndUpdate(
     {
       _id: sectionId,
@@ -164,9 +179,44 @@ const deleteSection = async (sectionId, userId) => {
   return deletedSection;
 };
 
+const reorderSections = async (courseId, userId, orderedIds) => {
+  const instructor = await InstructorProfile.findOne({ userId });
+
+  if (!instructor) {
+    throw new NotFoundError('Instructor profile not found');
+  }
+
+  const course = await Course.findOne({
+    _id: courseId,
+    instructorId: instructor._id,
+    isDeleted: false,
+  });
+
+  if (!course) {
+    throw new ForbiddenError('Course not found or access denied');
+  }
+
+  if (course.status === 'published') {
+    course.status = 'draft';
+    await course.save();
+  }
+
+  const ops = orderedIds.map((id, index) => ({
+    updateOne: {
+      filter: { _id: id, courseId, isDeleted: false },
+      update: { $set: { order: index + 1 } },
+    },
+  }));
+
+  await CourseSection.bulkWrite(ops);
+
+  return await CourseSection.find({ courseId, isDeleted: false }).sort({ order: 1 });
+};
+
 module.exports = {
   createSection,
   getSections,
   updateSection,
   deleteSection,
+  reorderSections,
 };

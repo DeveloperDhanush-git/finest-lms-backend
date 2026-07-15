@@ -32,7 +32,7 @@
 
 <body>
 
-    <h2>FINES T LMS - Razorpay Test</h2>
+    <h2>CourseHub - Razorpay Test</h2>
 
     <button onclick="startPayment()">
         Test Payment
@@ -42,8 +42,8 @@
 
     <script>
 
-        const TOKEN ="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhNDYzMjAyNWViZWYwODYxY2UyZWZlMyIsInJvbGUiOiJzdHVkZW50IiwiaWF0IjoxNzgyOTg1MjM3LCJleHAiOjE3ODI5ODg4Mzd9.B2ECR_TzZiAGPnO5e9JEZy8ucKqfIUVU-3RTLrtOxFY"
-           const API =
+        const TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhNDYzMjAyNWViZWYwODYxY2UyZWZlMyIsInJvbGUiOiJzdHVkZW50IiwiaWF0IjoxNzgyOTg1MjM3LCJleHAiOjE3ODI5ODg4Mzd9.B2ECR_TzZiAGPnO5e9JEZy8ucKqfIUVU-3RTLrtOxFY"
+        const API =
             "http://localhost:5000/api";
 
         function log(data) {
@@ -98,7 +98,7 @@
 
                     order_id: checkout.data.orderId,
 
-                    name: "FINEST LMS",
+                    name: "CourseHub",
 
                     description: "Course Purchase",
 
@@ -114,7 +114,7 @@
 
                     notes: {
 
-                        platform: "FINEST LMS"
+                        platform: "CourseHub"
 
                     },
 

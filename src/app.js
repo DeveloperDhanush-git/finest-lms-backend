@@ -58,9 +58,10 @@ const certificateRoutes = require("./routes/certificate.route");
 const dashboardRoutes = require("./routes/dashboard.route");
 const instructorDashboardRoutes = require("./routes/instructorDashboard.route");
 const adminDashboardRoutes = require("./routes/adminDashboard.route");
+const notificationRoutes = require("./routes/notification.route");
 
 app.get("/", (req, res) => {
-  res.send("Welcome to the Finest LMS API!");
+  res.send("Welcome to the CourseHubAPI!");
 });
 
 app.use("/api/health", healthRoute);
@@ -83,6 +84,7 @@ app.use("/api/certificates", certificateRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/instructor/dashboard", instructorDashboardRoutes);
 app.use("/api/admin/dashboard", adminDashboardRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 app.use(errorMiddleware);
 

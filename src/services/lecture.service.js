@@ -29,6 +29,11 @@ const createLecture = async (userId, data) => {
     throw new Error('Course not found or access denied');
   }
 
+  if (course.status === 'published') {
+    course.status = 'draft';
+    await course.save();
+  }
+
   const section = await CourseSection.findOne({
     _id: data.sectionId,
     courseId: data.courseId,
@@ -110,6 +115,11 @@ const updateLecture = async (lectureId, userId, updateData) => {
     throw new Error('Unauthorized to update this lecture');
   }
 
+  if (course.status === 'published') {
+    course.status = 'draft';
+    await course.save();
+  }
+
   const durationDiff = (updateData.duration || oldLecture.duration) - oldLecture.duration;
 
   const lecture = await CourseLecture.findByIdAndUpdate(lectureId, updateData, {
@@ -157,6 +167,11 @@ const deleteLecture = async (lectureId, userId) => {
 
   if (!course) {
     throw new Error('Unauthorized to delete this lecture');
+  }
+
+  if (course.status === 'published') {
+    course.status = 'draft';
+    await course.save();
   }
 
   if (lecture.video?.s3Prefix) {
@@ -222,6 +237,11 @@ const updateLectureResource = async (lectureId, userId, resource) => {
     throw new Error('Unauthorized');
   }
 
+  if (course.status === 'published') {
+    course.status = 'draft';
+    await course.save();
+  }
+
   lecture.resources.push(resource);
 
   await lecture.save();
@@ -252,6 +272,11 @@ const deleteLectureResource = async (lectureId, userId, resourceId) => {
 
   if (!course) {
     throw new Error('Unauthorized');
+  }
+
+  if (course.status === 'published') {
+    course.status = 'draft';
+    await course.save();
   }
 
   const resource = lecture.resources.id(resourceId);
@@ -296,6 +321,11 @@ const markLectureProcessing = async (lectureId, userId, videoPath) => {
     throw new Error('Unauthorized');
   }
 
+  if (course.status === 'published') {
+    course.status = 'draft';
+    await course.save();
+  }
+
   if (lecture.video.processingStatus === 'processing') {
     throw new Error('Video is already processing.');
   }
@@ -305,7 +335,7 @@ const markLectureProcessing = async (lectureId, userId, videoPath) => {
   }
 
   if (lecture.video.original) {
-    await fs.remove(lecture.video.original).catch(() => {});
+    await fs.remove(lecture.video.original).catch(() => { });
   }
 
   lecture.video = {
@@ -356,12 +386,17 @@ const removeLectureVideo = async (lectureId, userId) => {
     throw new Error('Unauthorized');
   }
 
+  if (course.status === 'published') {
+    course.status = 'draft';
+    await course.save();
+  }
+
   if (lecture.video?.s3Prefix) {
     await deleteDirectoryFromS3(lecture.video.s3Prefix);
   }
 
   if (lecture.video.original) {
-    await fs.remove(lecture.video.original).catch(() => {});
+    await fs.remove(lecture.video.original).catch(() => { });
   }
 
   lecture.video = {
@@ -424,6 +459,45 @@ const getLectureVideoStatus = async (lectureId, userId) => {
   };
 };
 
+const reorderLectures = async (sectionId, userId, orderedIds) => {
+  const instructor = await InstructorProfile.findOne({ userId });
+
+  if (!instructor) {
+    throw new Error('Instructor profile not found');
+  }
+
+  const section = await CourseSection.findById(sectionId);
+  if (!section) {
+    throw new Error('Section not found');
+  }
+
+  const course = await Course.findOne({
+    _id: section.courseId,
+    instructorId: instructor._id,
+    isDeleted: false,
+  });
+
+  if (!course) {
+    throw new Error('Course not found or access denied');
+  }
+
+  if (course.status === 'published') {
+    course.status = 'draft';
+    await course.save();
+  }
+
+  const ops = orderedIds.map((id, index) => ({
+    updateOne: {
+      filter: { _id: id, sectionId, isDeleted: false },
+      update: { $set: { order: index + 1 } },
+    },
+  }));
+
+  await CourseLecture.bulkWrite(ops);
+
+  return await CourseLecture.find({ sectionId, isDeleted: false }).sort({ order: 1 });
+};
+
 module.exports = {
   createLecture,
   getLecturesBySection,
@@ -436,4 +510,5 @@ module.exports = {
   markLectureProcessing,
   removeLectureVideo,
   getLectureVideoStatus,
+  reorderLectures,
 };

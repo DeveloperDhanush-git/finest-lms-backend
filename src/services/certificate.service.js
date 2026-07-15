@@ -111,6 +111,22 @@ const generateCertificate = async (userId, courseId) => {
 
   await enrollment.save();
 
+  // Send Notification
+  try {
+    const { createNotification } = require('./notification.service');
+    const senderUserId = instructor && instructor.userId ? instructor.userId._id : null;
+    await createNotification({
+      recipientId: userId,
+      senderId: senderUserId,
+      type: 'CERTIFICATE_GENERATED',
+      title: 'Certificate Generated!',
+      message: `Congratulations! Your certificate for "${course.title}" was successfully generated.`,
+      data: { courseId, certificateId: certificate._id },
+    });
+  } catch (err) {
+    console.error('Failed to send CERTIFICATE_GENERATED notification:', err.message);
+  }
+
   return certificate;
 };
 

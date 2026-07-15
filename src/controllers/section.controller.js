@@ -21,9 +21,15 @@ const deleteSection = asyncHandler(async (req, res) => {
   return success(res, 'Section deleted successfully');
 });
 
+const reorderSections = asyncHandler(async (req, res) => {
+  const sections = await sectionService.reorderSections(req.params.courseId, req.user._id, req.body.orderedIds);
+  return success(res, 'Sections reordered successfully', sections);
+});
+
 module.exports = {
   createSection,
   getSections,
   updateSection,
   deleteSection,
+  reorderSections,
 };

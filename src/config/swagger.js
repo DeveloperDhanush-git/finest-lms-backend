@@ -5,9 +5,9 @@ const options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'FINEST LMS API',
+      title: 'CourseHub API',
       version: '1.0.0',
-      description: 'Enterprise Learning Management System API Documentation',
+      description: 'CourseHub Learning Management System API Documentation',
     },
     servers: [
       {
@@ -38,6 +38,7 @@ const options = {
       { name: 'Dashboards', description: 'Dashboard summary and analytics endpoints' },
       { name: 'Certificates', description: 'Certificate generation and verification endpoints' },
       { name: 'Admin Courses', description: 'Admin course review and approval endpoints' },
+      { name: 'Notifications', description: 'User notification management endpoints' },
     ],
     components: {
       securitySchemes: {

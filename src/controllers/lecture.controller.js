@@ -109,6 +109,11 @@ const getLectureVideoStatus = asyncHandler(async (req, res) => {
   return success(res, 'Lecture video status retrieved successfully', status);
 });
 
+const reorderLectures = asyncHandler(async (req, res) => {
+  const lectures = await lectureService.reorderLectures(req.params.sectionId, req.user._id, req.body.orderedIds);
+  return success(res, 'Lectures reordered successfully', lectures);
+});
+
 module.exports = {
   createLecture,
   getLecturesBySection,
@@ -119,4 +124,5 @@ module.exports = {
   uploadLectureResource,
   removeLectureResource,
   getLectureVideoStatus,
+  reorderLectures,
 };

@@ -161,7 +161,67 @@ const completePayment = async (payment, paymentId, signature) => {
     await session.endSession();
   }
 
-  await payment.populate('courses.courseId', 'title thumbnail');
+  await payment.populate({
+    path: 'courses.courseId',
+    select: 'title thumbnail instructorId',
+    populate: {
+      path: 'instructorId',
+      select: 'userId',
+    },
+  });
+
+  // Send Notifications
+  try {
+    const { createNotification } = require('./notification.service');
+    for (const courseObj of payment.courses) {
+      const course = courseObj.courseId;
+      if (!course) continue;
+
+      // 1. Notify Student: PAYMENT_SUCCESS
+      try {
+        await createNotification({
+          recipientId: payment.studentId,
+          type: 'PAYMENT_SUCCESS',
+          title: 'Payment Successful',
+          message: `Your payment was successful for "${course.title}".`,
+          data: { paymentId: payment._id, courseId: course._id },
+        });
+      } catch (err) {
+        console.error('Failed to send PAYMENT_SUCCESS notification:', err.message);
+      }
+
+      // 2. Notify Student: NEW_ENROLLMENT
+      try {
+        await createNotification({
+          recipientId: payment.studentId,
+          type: 'NEW_ENROLLMENT',
+          title: 'Enrolled Successfully',
+          message: `You have successfully enrolled in "${course.title}".`,
+          data: { courseId: course._id },
+        });
+      } catch (err) {
+        console.error('Failed to send student NEW_ENROLLMENT notification:', err.message);
+      }
+
+      // 3. Notify Instructor: NEW_ENROLLMENT
+      if (course.instructorId && course.instructorId.userId) {
+        try {
+          await createNotification({
+            recipientId: course.instructorId.userId,
+            senderId: payment.studentId,
+            type: 'NEW_ENROLLMENT',
+            title: 'New Enrollment',
+            message: `A new student has enrolled in your course "${course.title}".`,
+            data: { courseId: course._id },
+          });
+        } catch (err) {
+          console.error('Failed to send instructor NEW_ENROLLMENT notification:', err.message);
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Failed processing post-payment notifications:', err.message);
+  }
 
   return payment;
 };
