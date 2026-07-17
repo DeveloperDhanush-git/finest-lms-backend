@@ -4,6 +4,7 @@ const CourseSection = require('../models/section.model');
 
 const CourseLecture = require('../models/lecture.model');
 const { getSearchSuggestions } = require('./course.service');
+const { NotFoundError } = require('../errors');
 
 const getPublicCourses = async (query) => {
   const {
@@ -90,117 +91,15 @@ const getPublicCourses = async (query) => {
   const basePipeline = [];
 
   if (cleanedSearch) {
-    basePipeline.push({
-      $search: {
-        index: 'course-search',
-        compound: {
-          should: [
-            {
-              phrase: {
-                query: cleanedSearch,
-                path: 'title',
-                score: {
-                  boost: {
-                    value: 20,
-                  },
-                },
-              },
-            },
-            {
-              autocomplete: {
-                query: cleanedSearch,
-                path: 'title',
-                fuzzy: {
-                  maxEdits: 1,
-                  prefixLength: 2,
-                },
-                score: {
-                  boost: {
-                    value: 15,
-                  },
-                },
-              },
-            },
-            {
-              autocomplete: {
-                query: cleanedSearch,
-                path: 'subtitle',
-                fuzzy: {
-                  maxEdits: 1,
-                  prefixLength: 2,
-                },
-                score: {
-                  boost: {
-                    value: 12,
-                  },
-                },
-              },
-            },
-            {
-              text: {
-                query: cleanedSearch,
-                path: 'tags',
-                fuzzy: {
-                  maxEdits: 1,
-                  prefixLength: 2,
-                },
-                score: {
-                  boost: {
-                    value: 9,
-                  },
-                },
-              },
-            },
-            {
-              text: {
-                query: cleanedSearch,
-                path: 'learningObjectives',
-                fuzzy: {
-                  maxEdits: 1,
-                  prefixLength: 2,
-                },
-                score: {
-                  boost: {
-                    value: 7,
-                  },
-                },
-              },
-            },
-            {
-              text: {
-                query: cleanedSearch,
-                path: 'requirements',
-                fuzzy: {
-                  maxEdits: 1,
-                  prefixLength: 2,
-                },
-                score: {
-                  boost: {
-                    value: 6,
-                  },
-                },
-              },
-            },
-            {
-              text: {
-                query: cleanedSearch,
-                path: 'description',
-                fuzzy: {
-                  maxEdits: 1,
-                  prefixLength: 2,
-                },
-                score: {
-                  boost: {
-                    value: 4,
-                  },
-                },
-              },
-            },
-          ],
-          minimumShouldMatch: 1,
-        },
-      },
-    });
+    const searchRegex = { $regex: cleanedSearch.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&"), $options: 'i' };
+    filters.$or = [
+      { title: searchRegex },
+      { subtitle: searchRegex },
+      { description: searchRegex },
+      { tags: searchRegex },
+      { learningObjectives: searchRegex },
+      { requirements: searchRegex }
+    ];
   }
 
   basePipeline.push({
@@ -215,33 +114,21 @@ const getPublicCourses = async (query) => {
 
   const resultPipeline = [...basePipeline];
 
-  if (cleanedSearch) {
-    resultPipeline.push({
-      $addFields: {
-        score: {
-          $meta: 'searchScore',
-        },
-      },
-    });
-  }
-
   const sortOptions = (() => {
-    const defaultRelevance = cleanedSearch ? { score: -1, createdAt: -1 } : { createdAt: -1 };
-
     switch (sort) {
       case 'newest':
-        return cleanedSearch ? { createdAt: -1, score: -1 } : { createdAt: -1 };
+        return { createdAt: -1 };
       case 'popular':
-        return cleanedSearch ? { totalEnrollments: -1, score: -1 } : { totalEnrollments: -1 };
+        return { totalEnrollments: -1 };
       case 'rating':
-        return cleanedSearch ? { averageRating: -1, score: -1 } : { averageRating: -1 };
+        return { averageRating: -1 };
       case 'price_low':
-        return cleanedSearch ? { effectivePrice: 1, score: -1 } : { effectivePrice: 1 };
+        return { effectivePrice: 1 };
       case 'price_high':
-        return cleanedSearch ? { effectivePrice: -1, score: -1 } : { effectivePrice: -1 };
+        return { effectivePrice: -1 };
       case 'relevance':
       default:
-        return defaultRelevance;
+        return { createdAt: -1 };
     }
   })();
 
@@ -264,11 +151,10 @@ const getPublicCourses = async (query) => {
       totalEnrollments: 1,
       createdAt: 1,
       effectivePrice: 1,
-      ...(cleanedSearch && {
-        score: {
-          $meta: 'searchScore',
-        },
-      }),
+      totalLectures: 1,
+      totalDuration: 1,
+      level: 1,
+      totalReviews: 1,
     },
   });
 
@@ -328,7 +214,7 @@ const getPublicCourseById = async (courseId) => {
     });
 
   if (!course) {
-    throw new Error('Course not found');
+    throw new NotFoundError('Course not found');
   }
 
   const sections = await CourseSection.find({

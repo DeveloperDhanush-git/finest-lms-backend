@@ -8,6 +8,8 @@ const razorpay = require('../config/razorpay');
 
 const Cart = require('../models/cart.model');
 const Payment = require('../models/payment.model');
+const Course = require('../models/course.model');
+const InstructorProfile = require('../models/instructor.model');
 
 const createCheckout = async (userId) => {
 
@@ -115,6 +117,17 @@ const completePayment = async (payment, paymentId, signature) => {
           existingEnrollment.certificateIssued = false;
           existingEnrollment.certificateIssuedAt = null;
           await existingEnrollment.save({ session });
+
+          const courseDoc = await Course.findById(course.courseId).session(session);
+          if (courseDoc) {
+            courseDoc.totalEnrollments += 1;
+            await courseDoc.save({ session });
+            await InstructorProfile.findOneAndUpdate(
+              { _id: courseDoc.instructorId },
+              { $inc: { totalStudents: 1 } },
+              { session }
+            );
+          }
         }
       } else {
         await Enrollment.create(
@@ -135,6 +148,17 @@ const completePayment = async (payment, paymentId, signature) => {
             session,
           }
         );
+
+        const courseDoc = await Course.findById(course.courseId).session(session);
+        if (courseDoc) {
+          courseDoc.totalEnrollments += 1;
+          await courseDoc.save({ session });
+          await InstructorProfile.findOneAndUpdate(
+            { _id: courseDoc.instructorId },
+            { $inc: { totalStudents: 1 } },
+            { session }
+          );
+        }
       }
     }
 

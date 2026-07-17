@@ -44,6 +44,14 @@ const enrollCourse = async (userId, courseId) => {
     },
   });
 
+  if (instructor) {
+    await InstructorProfile.findByIdAndUpdate(instructor._id, {
+      $inc: {
+        totalStudents: 1,
+      },
+    });
+  }
+
   return enrollment;
 };
 
