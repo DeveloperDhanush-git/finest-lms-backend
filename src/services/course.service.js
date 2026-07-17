@@ -462,115 +462,20 @@ const getSearchSuggestions = async (keyword) => {
     return [];
   }
 
-  const results = await Course.aggregate([
-    {
-      $search: {
-        index: 'course-search',
+  const searchRegex = new RegExp(keyword.trim().replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&"), 'i');
 
-        compound: {
-          should: [
-            {
-              autocomplete: {
-                query: keyword,
-
-                path: 'title',
-
-                fuzzy: {
-                  maxEdits: 2,
-
-                  prefixLength: 1,
-                },
-
-                score: {
-                  boost: {
-                    value: 10,
-                  },
-                },
-              },
-            },
-
-            {
-              autocomplete: {
-                query: keyword,
-
-                path: 'subtitle',
-
-                fuzzy: {
-                  maxEdits: 2,
-
-                  prefixLength: 1,
-                },
-
-                score: {
-                  boost: {
-                    value: 8,
-                  },
-                },
-              },
-            },
-
-            {
-              text: {
-                query: keyword,
-
-                path: ['description', 'tags', 'learningObjectives', 'requirements'],
-
-                fuzzy: {
-                  maxEdits: 2,
-
-                  prefixLength: 1,
-                },
-
-                score: {
-                  boost: {
-                    value: 5,
-                  },
-                },
-              },
-            },
-          ],
-
-          minimumShouldMatch: 1,
-        },
-      },
-    },
-
-    {
-      $match: {
-        status: 'published',
-
-        isDeleted: false,
-      },
-    },
-
-    {
-      $limit: 8,
-    },
-
-    {
-      $project: {
-        _id: 1,
-
-        title: 1,
-
-        subtitle: 1,
-
-        thumbnail: 1,
-
-        price: 1,
-
-        discountPrice: 1,
-
-        categoryId: 1,
-
-        instructorId: 1,
-
-        score: {
-          $meta: 'searchScore',
-        },
-      },
-    },
-  ]);
+  const results = await Course.find({
+    status: 'published',
+    isDeleted: false,
+    $or: [
+      { title: searchRegex },
+      { subtitle: searchRegex },
+      { description: searchRegex },
+      { tags: searchRegex },
+    ],
+  })
+    .limit(8)
+    .select('_id title subtitle thumbnail price discountPrice categoryId instructorId');
 
   await Course.populate(results, [
     {

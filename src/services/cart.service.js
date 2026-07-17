@@ -71,7 +71,7 @@ const addToCart = async (userId, courseId) => {
 
   await cart.save();
 
-  return cart;
+  return getCart(userId);
 };
 
 const getCart = async (userId) => {
@@ -119,7 +119,7 @@ const removeFromCart = async (userId, courseId) => {
 
   await cart.save();
 
-  return cart;
+  return getCart(userId);
 };
 
 const clearCart = async (userId) => {
