@@ -101,18 +101,16 @@
  *             type: object
  *             required:
  *               - firstName
- *               - lastName
  *               - email
  *               - password
  *             properties:
  *               firstName:
  *                 type: string
- *                 minLength: 2
+ *                 minLength: 1
  *                 maxLength: 50
  *                 example: John
  *               lastName:
  *                 type: string
- *                 minLength: 2
  *                 maxLength: 50
  *                 example: Doe
  *               email:
