@@ -47,15 +47,18 @@ const errorMiddleware = (err, req, res, next) => {
         error.isOperational = true;
     }
 
-    const statusCode = error.statusCode || err.statusCode || HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR;
+    const hasExplicitStatus = !!(error.statusCode || err.statusCode);
+    const statusCode = hasExplicitStatus
+        ? (error.statusCode || err.statusCode)
+        : HTTP_STATUS_CODES.BAD_REQUEST;
     const message = error.message || err.message || 'Internal Server Error';
-    const errorCode = error.errorCode || err.errorCode || 'INTERNAL_SERVER_ERROR';
-    const isOperational = error.isOperational || err.isOperational || false;
+    const errorCode = error.errorCode || err.errorCode || (hasExplicitStatus ? 'INTERNAL_SERVER_ERROR' : 'BAD_REQUEST');
+    const isOperational = error.isOperational || err.isOperational || !hasExplicitStatus;
     const validationErrors = error.errors || err.errors || undefined;
 
     const isServerError = statusCode >= 500;
 
-    if (isServerError || !isOperational) {
+    if (isServerError && !isOperational) {
         console.error(`[SERVER ERROR] [ReqID: ${req.id || 'N/A'}]`, err);
     }
 

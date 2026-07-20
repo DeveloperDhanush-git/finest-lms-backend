@@ -61,7 +61,7 @@ const adminDashboardRoutes = require("./routes/adminDashboard.route");
 const notificationRoutes = require("./routes/notification.route");
 
 app.get("/", (req, res) => {
-  res.send("Welcome to the CourseHubAPI!");
+  res.send("Welcome to the Fine Course Mart API!");
 });
 
 app.use("/api/health", healthRoute);

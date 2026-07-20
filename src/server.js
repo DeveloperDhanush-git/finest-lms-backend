@@ -10,6 +10,18 @@ const { initializeSocket } = require('./socket');
 
 const PORT = process.env.PORT || 5000;
 
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('━━━ UNHANDLED PROMISE REJECTION ━━━');
+  console.error('Promise:', promise);
+  console.error('Reason:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('━━━ UNCAUGHT EXCEPTION – APPLICATION WILL EXIT ━━━');
+  console.error(err);
+  process.exit(1);
+});
+
 const startServer = async () => {
   try {
     await connectDB();

@@ -5,9 +5,9 @@ const options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'CourseHub API',
+      title: 'Fine Course Mart API',
       version: '1.0.0',
-      description: 'CourseHub Learning Management System API Documentation',
+      description: 'Fine Course Mart Learning Management System API Documentation',
     },
     servers: [
       {

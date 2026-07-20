@@ -44,6 +44,11 @@ const unpublishCourse = asyncHandler(async (req, res) => {
 
 const uploadThumbnail = asyncHandler(async (req, res) => {
   try {
+    // FIX: Check for file type rejection (set in Multer fileFilter)
+    if (req.fileRejectionReason) {
+      throw new BadRequestError(req.fileRejectionReason);
+    }
+
     if (!req.file) {
       throw new BadRequestError('Please upload an image file');
     }
@@ -73,6 +78,11 @@ const uploadThumbnail = asyncHandler(async (req, res) => {
 
 const uploadPreviewVideo = asyncHandler(async (req, res) => {
   try {
+    // FIX: Check for file type rejection (set in Multer fileFilter)
+    if (req.fileRejectionReason) {
+      throw new BadRequestError(req.fileRejectionReason);
+    }
+
     if (!req.file) {
       throw new BadRequestError('Please upload a video file');
     }
