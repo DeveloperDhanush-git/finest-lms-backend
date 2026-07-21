@@ -17,7 +17,7 @@ const enrollmentSchema = new mongoose.Schema(
     paymentId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Payment',
-      required: true,
+      required: false,
     },
 
     enrolledAt: {
@@ -33,7 +33,8 @@ const enrollmentSchema = new mongoose.Schema(
 
     amountPaid: {
       type: Number,
-      required: true,
+      required: false,
+      default: 0,
     },
 
     progressPercentage: {

@@ -5,9 +5,7 @@ const InstructorProfile = require('../models/instructor.model');
 const { NotFoundError, ForbiddenError, ConflictError } = require('../errors');
 
 const createSection = async (userId, courseId, data) => {
-  const instructor = await InstructorProfile.findOne({
-    userId,
-  });
+  const instructor = await InstructorProfile.ensureProfileForUser(userId);
 
   if (!instructor) {
     throw new NotFoundError('Instructor profile not found');
@@ -49,9 +47,7 @@ const createSection = async (userId, courseId, data) => {
 };
 
 const getSections = async (courseId, userId) => {
-  const instructor = await InstructorProfile.findOne({
-    userId,
-  });
+  const instructor = await InstructorProfile.ensureProfileForUser(userId);
 
   const course = await Course.findOne({
     _id: courseId,
@@ -72,9 +68,7 @@ const getSections = async (courseId, userId) => {
 };
 
 const updateSection = async (sectionId, userId, data) => {
-  const instructor = await InstructorProfile.findOne({
-    userId,
-  });
+  const instructor = await InstructorProfile.ensureProfileForUser(userId);
 
   if (!instructor) {
     throw new NotFoundError('Instructor profile not found');
@@ -125,9 +119,7 @@ const updateSection = async (sectionId, userId, data) => {
 };
 
 const deleteSection = async (sectionId, userId) => {
-  const instructor = await InstructorProfile.findOne({
-    userId,
-  });
+  const instructor = await InstructorProfile.ensureProfileForUser(userId);
 
   if (!instructor) {
     throw new NotFoundError('Instructor profile not found');
@@ -180,7 +172,7 @@ const deleteSection = async (sectionId, userId) => {
 };
 
 const reorderSections = async (courseId, userId, orderedIds) => {
-  const instructor = await InstructorProfile.findOne({ userId });
+  const instructor = await InstructorProfile.ensureProfileForUser(userId);
 
   if (!instructor) {
     throw new NotFoundError('Instructor profile not found');

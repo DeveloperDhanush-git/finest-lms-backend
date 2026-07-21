@@ -6,9 +6,7 @@ const Payment = require('../models/payment.model');
 
 const getDashboard = async (userId) => {
 
-  const instructor = await InstructorProfile.findOne({
-    userId,
-  });
+  const instructor = await InstructorProfile.ensureProfileForUser(userId);
 
   if (!instructor) {
     throw new Error('Instructor profile not found');
@@ -98,7 +96,7 @@ const getDashboard = async (userId) => {
       createdAt: -1,
     })
     .limit(10);
-    
+
   const topCourses = await Course.find({
     _id: {
       $in: courseIds,

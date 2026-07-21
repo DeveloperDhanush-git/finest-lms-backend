@@ -73,4 +73,21 @@ const instructorProfileSchema = new mongoose.Schema(
   }
 );
 
+instructorProfileSchema.statics.ensureProfileForUser = async function (userId) {
+  let profile = await this.findOne({ userId });
+  if (!profile) {
+    const User = mongoose.model('User');
+    const user = await User.findById(userId);
+    if (user && user.role === 'admin') {
+      profile = await this.create({
+        userId,
+        headline: 'Administrator',
+        biography: 'System Administrator account.',
+        expertise: ['Administration'],
+      });
+    }
+  }
+  return profile;
+};
+
 module.exports = mongoose.model('InstructorProfile', instructorProfileSchema);

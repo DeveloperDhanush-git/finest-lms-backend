@@ -6,9 +6,7 @@ const InstructorProfile = require('../models/instructor.model');
 const { deleteFileFromS3 } = require('./s3.service');
 
 const createCourse = async (userId, courseData) => {
-  const instructor = await InstructorProfile.findOne({
-    userId,
-  });
+  const instructor = await InstructorProfile.ensureProfileForUser(userId);
 
   if (!instructor) {
     throw new Error('Create instructor profile first');
@@ -32,9 +30,7 @@ const createCourse = async (userId, courseData) => {
 };
 
 const getMyCourses = async (userId) => {
-  const instructor = await InstructorProfile.findOne({
-    userId,
-  });
+  const instructor = await InstructorProfile.ensureProfileForUser(userId);
 
   if (!instructor) {
     throw new Error('Instructor profile not found');
@@ -51,9 +47,7 @@ const getMyCourses = async (userId) => {
 };
 
 const getCourseById = async (courseId, userId) => {
-  const instructor = await InstructorProfile.findOne({
-    userId,
-  });
+  const instructor = await InstructorProfile.ensureProfileForUser(userId);
 
   if (!instructor) {
     throw new Error('Instructor profile not found');
@@ -75,9 +69,7 @@ const getCourseById = async (courseId, userId) => {
 };
 
 const updateCourse = async (courseId, userId, updateData) => {
-  const instructor = await InstructorProfile.findOne({
-    userId,
-  });
+  const instructor = await InstructorProfile.ensureProfileForUser(userId);
   if (!instructor) {
     throw new Error('Instructor profile not found');
   }
@@ -108,9 +100,7 @@ const updateCourse = async (courseId, userId, updateData) => {
 };
 
 const deleteCourse = async (courseId, userId) => {
-  const instructor = await InstructorProfile.findOne({
-    userId,
-  });
+  const instructor = await InstructorProfile.ensureProfileForUser(userId);
 
   if (!instructor) {
     throw new Error('Instructor profile not found');
@@ -156,9 +146,7 @@ const deleteCourse = async (courseId, userId) => {
 };
 
 const submitCourse = async (courseId, userId) => {
-  const instructor = await InstructorProfile.findOne({
-    userId,
-  });
+  const instructor = await InstructorProfile.ensureProfileForUser(userId);
 
   if (!instructor) {
     throw new Error('Instructor profile not found');
@@ -276,9 +264,7 @@ const submitCourse = async (courseId, userId) => {
 const publishCourse = async (courseId, userId) => submitCourse(courseId, userId);
 
 const unpublishCourse = async (courseId, userId) => {
-  const instructor = await InstructorProfile.findOne({
-    userId,
-  });
+  const instructor = await InstructorProfile.ensureProfileForUser(userId);
 
   if (!instructor) {
     throw new Error('Instructor profile not found');
@@ -308,9 +294,7 @@ const unpublishCourse = async (courseId, userId) => {
 };
 
 const updateThumbnail = async (courseId, userId, thumbnailUrl, thumbnailKey) => {
-  const instructor = await InstructorProfile.findOne({
-    userId,
-  });
+  const instructor = await InstructorProfile.ensureProfileForUser(userId);
 
   if (!instructor) {
     throw new Error('Instructor profile not found');
@@ -346,9 +330,7 @@ const updateThumbnail = async (courseId, userId, thumbnailUrl, thumbnailKey) => 
 };
 
 const deleteThumbnail = async (courseId, userId) => {
-  const instructor = await InstructorProfile.findOne({
-    userId,
-  });
+  const instructor = await InstructorProfile.ensureProfileForUser(userId);
 
   if (!instructor) {
     throw new Error('Instructor profile not found');
@@ -384,9 +366,7 @@ const deleteThumbnail = async (courseId, userId) => {
 };
 
 const updatePreviewVideo = async (courseId, userId, videoData) => {
-  const instructor = await InstructorProfile.findOne({
-    userId,
-  });
+  const instructor = await InstructorProfile.ensureProfileForUser(userId);
 
   if (!instructor) {
     throw new Error('Instructor profile not found');
@@ -424,9 +404,7 @@ const updatePreviewVideo = async (courseId, userId, videoData) => {
 };
 
 const deletePreviewVideo = async (courseId, userId) => {
-  const instructor = await InstructorProfile.findOne({
-    userId,
-  });
+  const instructor = await InstructorProfile.ensureProfileForUser(userId);
 
   if (!instructor) {
     throw new Error('Instructor profile not found');

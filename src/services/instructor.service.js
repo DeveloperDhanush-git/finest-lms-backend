@@ -21,9 +21,7 @@ const createProfile = async (userId, profileData) => {
 };
 
 const getProfile = async (userId) => {
-  const profile = await InstructorProfile.findOne({
-    userId,
-  });
+  const profile = await InstructorProfile.ensureProfileForUser(userId);
 
   if (!profile) {
     throw new Error("Instructor profile not found");
@@ -33,6 +31,7 @@ const getProfile = async (userId) => {
 };
 
 const updateProfile = async (userId, updateData) => {
+  await InstructorProfile.ensureProfileForUser(userId);
   const profile = await InstructorProfile.findOneAndUpdate(
     { userId },
     updateData,

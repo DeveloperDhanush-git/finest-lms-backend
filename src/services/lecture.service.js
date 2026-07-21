@@ -11,9 +11,7 @@ const { deleteFileFromS3, deleteDirectoryFromS3 } = require('./s3.service');
 const fs = require('fs-extra');
 
 const createLecture = async (userId, data) => {
-  const instructor = await InstructorProfile.findOne({
-    userId,
-  });
+  const instructor = await InstructorProfile.ensureProfileForUser(userId);
 
   if (!instructor) {
     throw new Error('Instructor profile not found');
@@ -63,9 +61,7 @@ const createLecture = async (userId, data) => {
 };
 
 const getLecturesBySection = async (sectionId, userId) => {
-  const instructor = await InstructorProfile.findOne({
-    userId,
-  });
+  const instructor = await InstructorProfile.ensureProfileForUser(userId);
 
   const section = await CourseSection.findById(sectionId);
   if (!section) {
@@ -91,9 +87,7 @@ const getLecturesBySection = async (sectionId, userId) => {
 };
 
 const updateLecture = async (lectureId, userId, updateData) => {
-  const instructor = await InstructorProfile.findOne({
-    userId,
-  });
+  const instructor = await InstructorProfile.ensureProfileForUser(userId);
 
   if (!instructor) {
     throw new Error('Instructor profile not found');
@@ -145,9 +139,7 @@ const updateLecture = async (lectureId, userId, updateData) => {
 };
 
 const deleteLecture = async (lectureId, userId) => {
-  const instructor = await InstructorProfile.findOne({
-    userId,
-  });
+  const instructor = await InstructorProfile.ensureProfileForUser(userId);
 
   if (!instructor) {
     throw new Error('Instructor profile not found');
@@ -213,9 +205,7 @@ const deleteLecture = async (lectureId, userId) => {
 };
 
 const updateLectureResource = async (lectureId, userId, resource) => {
-  const instructor = await InstructorProfile.findOne({
-    userId,
-  });
+  const instructor = await InstructorProfile.ensureProfileForUser(userId);
 
   if (!instructor) {
     throw new Error('Instructor profile not found');
@@ -250,9 +240,7 @@ const updateLectureResource = async (lectureId, userId, resource) => {
 };
 
 const deleteLectureResource = async (lectureId, userId, resourceId) => {
-  const instructor = await InstructorProfile.findOne({
-    userId,
-  });
+  const instructor = await InstructorProfile.ensureProfileForUser(userId);
 
   if (!instructor) {
     throw new Error('Instructor profile not found');
@@ -295,9 +283,7 @@ const deleteLectureResource = async (lectureId, userId, resourceId) => {
 };
 
 const markLectureProcessing = async (lectureId, userId, videoPath) => {
-  const instructor = await InstructorProfile.findOne({
-    userId,
-  });
+  const instructor = await InstructorProfile.ensureProfileForUser(userId);
 
   if (!instructor) {
     throw new Error('Instructor profile not found');
@@ -362,9 +348,7 @@ const markLectureProcessing = async (lectureId, userId, videoPath) => {
 };
 
 const removeLectureVideo = async (lectureId, userId) => {
-  const instructor = await InstructorProfile.findOne({
-    userId,
-  });
+  const instructor = await InstructorProfile.ensureProfileForUser(userId);
 
   if (!instructor) {
     throw new Error('Instructor profile not found');
@@ -422,9 +406,7 @@ const removeLectureVideo = async (lectureId, userId) => {
   return lecture;
 };
 const getLectureVideoStatus = async (lectureId, userId) => {
-  const instructor = await InstructorProfile.findOne({
-    userId,
-  });
+  const instructor = await InstructorProfile.ensureProfileForUser(userId);
 
   if (!instructor) {
     throw new Error('Instructor profile not found');
@@ -460,7 +442,7 @@ const getLectureVideoStatus = async (lectureId, userId) => {
 };
 
 const reorderLectures = async (sectionId, userId, orderedIds) => {
-  const instructor = await InstructorProfile.findOne({ userId });
+  const instructor = await InstructorProfile.ensureProfileForUser(userId);
 
   if (!instructor) {
     throw new Error('Instructor profile not found');
