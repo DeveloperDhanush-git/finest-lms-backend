@@ -5,6 +5,9 @@ const hpp = require("hpp");
 const compression = require("compression");
 const app = express();
 
+// Enable CORS first so that all responses (including preflights and rate limit errors) have correct headers
+app.use(cors());
+
 const swaggerDocs = require("./config/swagger");
 const requestIdMiddleware = require("./middlewares/requestId.middleware");
 const logger = require("./middlewares/logger.middleware");
@@ -35,8 +38,6 @@ app.use(compression());
 app.use("/api", globalLimiter);
 app.use("/api/auth/login", authLimiter);
 app.use("/api/auth/register", authLimiter);
-
-app.use(cors());
 
 const authRoute = require("./routes/auth.route");
 const healthRoute = require("./routes/health.route");
