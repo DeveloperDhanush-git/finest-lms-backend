@@ -7,7 +7,8 @@ const registerSchema = z.object({
     .max(50),
   lastName: z
     .string()
-    .max(50),
+    .max(50)
+    .optional(),
   email: z.email("Invalid email address"),
   password: z.string().min(8, "Password must be at least 8 characters").max(30),
 });
