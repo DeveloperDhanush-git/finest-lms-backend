@@ -3,13 +3,18 @@ const { z } = require('zod');
 const updateProfileSchema = z.object({
   firstName: z.string().min(1).max(50).optional(),
 
-  lastName: z.string().max(50).optional(),
+  lastName: z.string().max(50).nullish(),
 
-  phone: z.string().min(10).max(15).optional(),
+  phone: z
+    .string()
+    .min(10)
+    .max(15)
+    .nullish()
+    .or(z.literal("")),
 
-  avatar: z.string().optional(),
+  avatar: z.string().nullish(),
 
-  avatarPublicId: z.string().optional(),
+  avatarPublicId: z.string().nullish(),
 });
 
 const changePasswordSchema = z

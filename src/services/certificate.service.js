@@ -70,11 +70,11 @@ const generateCertificate = async (userId, courseId) => {
 
   await generateCertificatePdf(
     {
-      studentName: `${student.firstName} ${student.lastName}`,
+      studentName: student.lastName ? `${student.firstName} ${student.lastName}` : student.firstName,
 
       courseTitle: course.title,
 
-      instructor: `${instructor.userId.firstName} ${instructor.userId.lastName}`,
+      instructor: instructor.userId.lastName ? `${instructor.userId.firstName} ${instructor.userId.lastName}` : instructor.userId.firstName,
 
       date: new Date().toLocaleDateString(),
 

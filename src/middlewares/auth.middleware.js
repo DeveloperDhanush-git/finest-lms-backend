@@ -23,7 +23,7 @@ const authMiddleware = asyncHandler(async (req, res, next) => {
     _id: decoded.id,
     accountStatus: STATUSES.ACCOUNT.ACTIVE,
   }).select(
-    "_id firstName lastName email role avatar phone countryCode accountStatus",
+    "_id firstName lastName email role avatar phone countryCode accountStatus createdAt",
   );
 
   if (!user) {

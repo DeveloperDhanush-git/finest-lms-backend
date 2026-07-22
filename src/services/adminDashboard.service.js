@@ -170,7 +170,7 @@ const getDashboard = async () => {
       _id: inst._id,
       userId: u._id,
       firstName: u.firstName || 'Teacher',
-      lastName: u.lastName || 'Dev',
+      lastName: u.lastName || '',
       email: u.email || '—',
       avatar: u.avatar || '',
       createdAt: u.createdAt || inst.createdAt,

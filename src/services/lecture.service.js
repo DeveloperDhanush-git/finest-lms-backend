@@ -5,6 +5,7 @@ const Course = require('../models/course.model');
 const CourseSection = require('../models/section.model');
 
 const InstructorProfile = require('../models/instructor.model');
+const User = require('../models/user.model');
 
 const { deleteFileFromS3, deleteDirectoryFromS3 } = require('./s3.service');
 
@@ -61,18 +62,30 @@ const createLecture = async (userId, data) => {
 };
 
 const getLecturesBySection = async (sectionId, userId) => {
-  const instructor = await InstructorProfile.ensureProfileForUser(userId);
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new Error('User not found');
+  }
 
   const section = await CourseSection.findById(sectionId);
   if (!section) {
     throw new Error('Section not found');
   }
 
-  const course = await Course.findOne({
-    _id: section.courseId,
-    instructorId: instructor?._id,
-    isDeleted: false,
-  });
+  let course;
+  if (user.role === 'admin') {
+    course = await Course.findOne({
+      _id: section.courseId,
+      isDeleted: false,
+    });
+  } else {
+    const instructor = await InstructorProfile.findOne({ userId });
+    course = await Course.findOne({
+      _id: section.courseId,
+      instructorId: instructor?._id,
+      isDeleted: false,
+    });
+  }
 
   if (!course) {
     throw new Error('Course not found or access denied');

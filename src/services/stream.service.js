@@ -1,13 +1,11 @@
 const Enrollment = require('../models/enrollment.model');
-
 const CourseLecture = require('../models/lecture.model');
-
 const Course = require('../models/course.model');
-
+const User = require('../models/user.model');
+const InstructorProfile = require('../models/instructor.model');
 const { generateSignedUrl } = require('./cloudfront.service');
 
 const getLectureStream = async (lectureId, userId) => {
-
   const lecture = await CourseLecture.findById(lectureId);
 
   if (!lecture || lecture.isDeleted) {
@@ -16,27 +14,43 @@ const getLectureStream = async (lectureId, userId) => {
 
   const course = await Course.findOne({
     _id: lecture.courseId,
-
     isDeleted: false,
-
-    status: 'published',
   });
 
   if (!course) {
     throw new Error('Course not found');
   }
 
-  if (!lecture.isPreview) {
-    const enrollment = await Enrollment.findOne({
-      studentId: userId,
+  const requestingUser = await User.findById(userId);
+  if (!requestingUser) {
+    throw new Error('User not found');
+  }
 
-      courseId: course._id,
+  let hasAccess = false;
+  if (requestingUser.role === 'admin') {
+    hasAccess = true;
+  } else if (requestingUser.role === 'instructor') {
+    const instructorProfile = await InstructorProfile.findOne({ userId: requestingUser._id });
+    if (instructorProfile && course.instructorId.toString() === instructorProfile._id.toString()) {
+      hasAccess = true;
+    }
+  }
 
-      status: { $in: ['active', 'completed'] },
-    });
+  if (!hasAccess) {
+    if (course.status !== 'published') {
+      throw new Error('Course not found');
+    }
 
-    if (!enrollment) {
-      throw new Error('You are not enrolled in this course.');
+    if (!lecture.isPreview) {
+      const enrollment = await Enrollment.findOne({
+        studentId: userId,
+        courseId: course._id,
+        status: { $in: ['active', 'completed'] },
+      });
+
+      if (!enrollment) {
+        throw new Error('You are not enrolled in this course.');
+      }
     }
   }
 

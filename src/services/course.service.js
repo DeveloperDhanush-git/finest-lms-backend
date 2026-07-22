@@ -229,33 +229,54 @@ const submitCourse = async (courseId, userId) => {
     throw new Error('Course must contain at least one lecture');
   }
 
-  course.status = 'pending';
-  course.publishedAt = null;
-  course.approvedBy = null;
-  course.approvedAt = null;
-  course.rejectedBy = null;
-  course.rejectedAt = null;
-  course.rejectionReason = null;
+  const User = require('../models/user.model');
+  const submittingUser = await User.findById(userId);
+  const isAdmin = submittingUser && submittingUser.role === 'admin';
+
+  if (isAdmin) {
+    course.status = 'published';
+    course.publishedAt = new Date();
+    course.approvedBy = userId;
+    course.approvedAt = new Date();
+    course.rejectedBy = null;
+    course.rejectedAt = null;
+    course.rejectionReason = null;
+
+    // Set all sections of the course to isPublished: true
+    await CourseSection.updateMany(
+      { courseId: course._id, isDeleted: false },
+      { $set: { isPublished: true } }
+    );
+  } else {
+    course.status = 'pending';
+    course.publishedAt = null;
+    course.approvedBy = null;
+    course.approvedAt = null;
+    course.rejectedBy = null;
+    course.rejectedAt = null;
+    course.rejectionReason = null;
+  }
 
   await course.save();
 
-  // Send notifications to admins
-  try {
-    const User = require('../models/user.model');
-    const { createNotification } = require('./notification.service');
-    const admins = await User.find({ role: 'admin' });
-    for (const admin of admins) {
-      await createNotification({
-        recipientId: admin._id,
-        senderId: userId, // the instructor
-        type: 'COURSE_SUBMITTED',
-        title: 'New Course Submitted',
-        message: `Instructor has submitted the course "${course.title}" for review.`,
-        data: { courseId: course._id },
-      });
+  if (!isAdmin) {
+    // Send notifications to admins
+    try {
+      const { createNotification } = require('./notification.service');
+      const admins = await User.find({ role: 'admin' });
+      for (const admin of admins) {
+        await createNotification({
+          recipientId: admin._id,
+          senderId: userId, // the instructor
+          type: 'COURSE_SUBMITTED',
+          title: 'New Course Submitted',
+          message: `Instructor has submitted the course "${course.title}" for review.`,
+          data: { courseId: course._id },
+        });
+      }
+    } catch (err) {
+      console.error('Failed to send COURSE_SUBMITTED notification:', err.message);
     }
-  } catch (err) {
-    console.error('Failed to send COURSE_SUBMITTED notification:', err.message);
   }
 
   return course;
