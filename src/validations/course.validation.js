@@ -13,7 +13,7 @@ const createCourseSchema = z.object({
 
   level: z.enum(['beginner', 'intermediate', 'advanced', 'all_levels']),
 
-  price: z.number().min(0),
+  price: z.number().min(0).optional(),
 
   discountPrice: z.number().min(0).optional(),
 

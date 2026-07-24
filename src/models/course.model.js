@@ -79,12 +79,12 @@ const courseSchema = new mongoose.Schema(
 
     price: {
       type: Number,
-      default: 0,
+      default: null,
     },
 
     discountPrice: {
       type: Number,
-      default: 0,
+      default: null,
     },
 
     totalDuration: {
