@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Razorpay Backend Test</title>
+
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+            background: #f5f5f5;
+        }
+
+        button {
+            padding: 14px 30px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        pre {
+            margin-top: 30px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            overflow: auto;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>Fine Course Mart - Razorpay Test</h2>
+
+    <button onclick="startPayment()">
+        Test Payment
+    </button>
+
+    <pre id="output"></pre>
+
+    <script>
+
+        const TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhNDYzMjAyNWViZWYwODYxY2UyZWZlMyIsInJvbGUiOiJzdHVkZW50IiwiaWF0IjoxNzgyOTg1MjM3LCJleHAiOjE3ODI5ODg4Mzd9.B2ECR_TzZiAGPnO5e9JEZy8ucKqfIUVU-3RTLrtOxFY"
+        const API =
+            "http://localhost:5000/api";
+
+        function log(data) {
+
+            document.getElementById("output").textContent =
+                JSON.stringify(data, null, 2);
+
+            console.log(data);
+
+        }
+
+        async function startPayment() {
+
+            try {
+                const checkoutResponse =
+                    await fetch(`${API}/payments/checkout`, {
+
+                        method: "POST",
+
+                        headers: {
+
+                            Authorization:
+                                `Bearer ${TOKEN}`,
+
+                            "Content-Type":
+                                "application/json"
+
+                        }
+
+                    });
+
+                const checkout =
+                    await checkoutResponse.json();
+
+                console.log(checkout);
+
+                if (!checkout.success) {
+
+                    alert(checkout.message);
+
+                    return;
+
+                }
+
+                const options = {
+
+                    key: checkout.data.key,
+
+                    amount: checkout.data.amount,
+
+                    currency: checkout.data.currency,
+
+                    order_id: checkout.data.orderId,
+
+                    name: "Fine Course Mart",
+
+                    description: "Course Purchase",
+
+                    prefill: {
+
+                        name: "Test Student",
+
+                        email: "student@test.com",
+
+                        contact: "9876543210"
+
+                    },
+
+                    notes: {
+
+                        platform: "Fine Course Mart"
+
+                    },
+
+                    retry: {
+
+                        enabled: true,
+
+                        max_count: 2
+
+                    },
+
+                    modal: {
+
+                        ondismiss() {
+
+                            alert("Payment cancelled");
+
+                        }
+
+                    },
+
+                    handler:
+                        async function (response) {
+
+                            console.log(response);
+
+                            const verifyResponse =
+                                await fetch(`${API}/payments/verify`, {
+
+                                    method: "POST",
+
+                                    headers: {
+
+                                        Authorization:
+                                            `Bearer ${TOKEN}`,
+
+                                        "Content-Type":
+                                            "application/json"
+
+                                    },
+
+                                    body: JSON.stringify({
+
+                                        razorpay_order_id:
+                                            response.razorpay_order_id,
+
+                                        razorpay_payment_id:
+                                            response.razorpay_payment_id,
+
+                                        razorpay_signature:
+                                            response.razorpay_signature
+
+                                    })
+
+                                });
+
+                            const verify =
+                                await verifyResponse.json();
+
+                            log(verify);
+
+                            if (verify.success) {
+
+                                alert("Payment Verified Successfully!");
+
+                            }
+
+                            else {
+
+                                alert("Verification Failed");
+
+                            }
+
+                        },
+
+                    theme: {
+
+                        color:
+                            "#0f62fe"
+
+                    }
+
+                };
+
+                const razorpay = new Razorpay(options);
+
+                razorpay.on("payment.failed", function (response) {
+
+                    console.log(response.error);
+
+                    log(response.error);
+
+                    alert("Payment Failed");
+
+                });
+
+                razorpay.open();
+
+            }
+
+            catch (error) {
+
+                console.error(error);
+
+            }
+
+        }
+
+    </script>
+
+</body>
+
+</html>
